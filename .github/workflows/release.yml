@@ -87,7 +87,13 @@ jobs:
           set -o pipefail
           APK_PATH=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
           echo "APK: ${APK_PATH}"
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "${APK_PATH}" \
+          APKSIGNER=$(ls -d "${ANDROID_HOME}"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "${APKSIGNER}" ]; then
+            echo "Unable to find the apksigner of the android sdk."
+            exit 1
+          fi
+          echo "APKSIGNER: ${APKSIGNER}"
+          "${APKSIGNER}" verify --verbose --print-certs "${APK_PATH}" \
             | tee apksigner-output.txt
           grep -q "Verified using v2 scheme" apksigner-output.txt \
             || grep -q "Verified using v3 scheme" apksigner-output.txt
