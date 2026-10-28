@@ -95,18 +95,19 @@ class SubtypeManager(context: Context) {
      * Adds a given [subtype] to the subtype list, if it does not exist.
      *
      * @param subtype The subtype which should be added.
-     * @return True if the subtype was added, false otherwise. A return value of false indicates
-     *  that the subtype already exists.
+     * @return The id of the newly added subtype or null if the subtype already exists.
      */
-    fun addSubtype(subtype: Subtype): Boolean {
-        val subtypeToAdd = subtype.copy(id = System.currentTimeMillis())
+    fun addSubtype(subtype: Subtype): Long? {
         val subtypeList = subtypes
         if (subtypeList.find { it.equalsExcludingId(subtype) } != null) {
-            return false
+            return null
         }
+        // The id of the new subtype has to be unique, therefore the next free id is calculated here.
+        val newId = (subtypeList.maxOfOrNull { it.id } ?: -1L) + 1
+        val subtypeToAdd = subtype.copy(id = newId)
         val newSubtypeList = subtypeList + subtypeToAdd
         persistNewSubtypeList(newSubtypeList)
-        return true
+        return newId
     }
 
     /**

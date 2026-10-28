@@ -184,6 +184,14 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "correction__remember_caps_lock_state",
             default = false,
         )
+        /**
+         * Whether a word which was typed by the user should be corrected automatically, if a similar word exists in
+         * the word list of the active language.
+         */
+        val autoCorrectionEnabled = boolean(
+            key = "correction__auto_correction_enabled",
+            default = false,
+        )
     }
 
     val devtools = Devtools()
@@ -751,6 +759,14 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val blockPossiblyOffensive = boolean(
             key = "suggestion__block_possibly_offensive",
             default = true,
+        )
+        /**
+         * The languages for which word suggestions and spell corrections are provided. The languages are stored as a
+         * comma separated list of language codes, e.g. "en,es".
+         */
+        val enabledLanguages = string(
+            key = "suggestion__enabled_languages",
+            default = "en,es",
         )
         val incognitoMode = enum(
             key = "suggestion__incognito_mode",

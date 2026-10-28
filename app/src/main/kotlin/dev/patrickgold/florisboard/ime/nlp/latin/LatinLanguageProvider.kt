@@ -17,6 +17,7 @@
 package dev.patrickgold.florisboard.ime.nlp.latin
 
 import android.content.Context
+import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.appContext
 import dev.patrickgold.florisboard.ime.core.Subtype
 import dev.patrickgold.florisboard.ime.editor.EditorContent
@@ -51,6 +52,7 @@ class LatinLanguageProvider(context: Context) : SpellingProvider, SuggestionProv
     }
 
     private val appContext by context.appContext()
+    private val prefs by FlorisPreferenceStore
 
     override val providerId = ProviderId
 
@@ -189,15 +191,30 @@ class LatinLanguageProvider(context: Context) : SpellingProvider, SuggestionProv
      *  the given subtype. This is required for the glide typing feature, which relies on a word list being present.
      */
     private suspend fun dictionaryFor(subtype: Subtype, allowFallback: Boolean): LatinDictionary? {
+        val enabledLanguages = enabledLanguages()
         for (locale in subtype.locales()) {
-            val dictionary = LatinDictionaries.get(appContext, locale.language)
+            val language = locale.language.lowercase()
+            // Only the languages which the user has enabled are used for the suggestions.
+            if (language !in enabledLanguages) continue
+            val dictionary = LatinDictionaries.get(appContext, language)
             if (dictionary.size > 0) {
                 return dictionary
             }
         }
         if (!allowFallback) return null
-        val fallback = LatinDictionaries.get(appContext, LatinDictionaries.FallbackLanguage)
+        val fallbackLanguage = LatinDictionaries.FallbackLanguage
+        if (fallbackLanguage !in enabledLanguages) return null
+        val fallback = LatinDictionaries.get(appContext, fallbackLanguage)
         return fallback.takeIf { it.size > 0 }
+    }
+
+    /**
+     * Returns the languages for which the word suggestions and the spell corrections are provided.
+     *
+     * The user can choose the languages in the settings of the app.
+     */
+    private fun enabledLanguages(): Set<String> {
+        return LatinDictionaries.parseLanguages(prefs.suggestion.enabledLanguages.get())
     }
 
     /**

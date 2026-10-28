@@ -33,4 +33,13 @@
     <string name="settings__custom_font__remove__success">La fuente ha sido eliminada</string>
 
     <string name="backup_and_restore__back_up__files_custom_fonts">Fuentes personalizadas</string>
+
+    <string name="pref__suggestion__enabled_languages__label">Idiomas de las sugerencias</string>
+    <string name="pref__suggestion__enabled_languages__summary">Selecciona los idiomas para los que se ofrecen sugerencias de palabras y correcciones ortográficas</string>
+    <string name="settings__suggestion__language__english">Inglés</string>
+    <string name="settings__suggestion__language__spanish">Español</string>
+    <string name="pref__correction__auto_correction_enabled__label">Corrección automática</string>
+    <string name="pref__correction__auto_correction_enabled__summary">Corrige automáticamente las palabras escritas, si existe una palabra similar en la lista de palabras del idioma activo</string>
+    <string name="correction__auto_correction__enabled">La corrección automática está activada</string>
+    <string name="correction__auto_correction__disabled">La corrección automática está desactivada</string>
 </resources>

@@ -47,6 +47,8 @@ import dev.patrickgold.florisboard.ime.input.InputShiftState
 import dev.patrickgold.florisboard.ime.nlp.ClipboardSuggestionCandidate
 import dev.patrickgold.florisboard.ime.nlp.PunctuationRule
 import dev.patrickgold.florisboard.ime.nlp.SuggestionCandidate
+import dev.patrickgold.florisboard.ime.nlp.WordSuggestionCandidate
+import dev.patrickgold.florisboard.ime.nlp.latin.LatinDictionaries
 import dev.patrickgold.florisboard.ime.onehanded.OneHandedMode
 import dev.patrickgold.florisboard.ime.popup.PopupMappingComponent
 import dev.patrickgold.florisboard.ime.text.composing.Composer
@@ -85,6 +87,14 @@ import org.florisboard.lib.kotlin.collectLatestIn
 private val DoubleSpacePeriodMatcher = """([^.!?‽\s]\s)""".toRegex()
 
 class KeyboardManager(context: Context) : InputKeyEventReceiver {
+    companion object {
+        /**
+         * The maximum length of a word which is considered for the automatic correction. Longer words are ignored, as
+         * they are most likely not a word but a sentence or an url.
+         */
+        private const val MaxAutoCorrectionWordLength = 32
+    }
+
     private val prefs by FlorisPreferenceStore
     private val appContext by context.appContext()
     private val clipboardManager by context.clipboardManager()
@@ -541,6 +551,7 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
     fun handleHardwareKeyboardSpace() {
         val candidate = nlpManager.getAutoCommitCandidate()
         candidate?.let { commitCandidate(it) }
+        getAutoCorrection()?.let { editorInstance.commitCompletion(it) }
         // Skip handling changing to characters keyboard and double space periods
         // TODO: this is whether we commit space after selecting candidate. Should be determined by SuggestionProvider
         if (!subtypeManager.activeSubtype.primaryLocale.supportsAutoSpace &&
@@ -556,6 +567,9 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
     private fun handleSpace(data: KeyData) {
         val candidate = nlpManager.getAutoCommitCandidate()
         candidate?.let { commitCandidate(it) }
+        // If the automatic correction is enabled, a word which was typed by the user is corrected, if a similar word
+        // exists in the word list of the active language.
+        getAutoCorrection()?.let { editorInstance.commitCompletion(it) }
         if (prefs.keyboard.spaceBarSwitchesToCharacters.get()) {
             when (activeState.keyboardMode) {
                 KeyboardMode.NUMERIC_ADVANCED,
@@ -610,9 +624,55 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
      * Handles a [KeyCode.TOGGLE_AUTOCORRECT] event.
      */
     private fun handleToggleAutocorrect() {
-        lastToastReference.get()?.cancel()
-        lastToastReference = WeakReference(
-            appContext.showLongToastSync("Autocorrect toggle is a placeholder and not yet implemented")
+        scope.launch {
+            val newValue = !prefs.correction.autoCorrectionEnabled.get()
+            prefs.correction.autoCorrectionEnabled.set(newValue)
+            lastToastReference.get()?.cancel()
+            lastToastReference = WeakReference(
+                appContext.showLongToastSync(
+                    if (newValue) {
+                        R.string.correction__auto_correction__enabled
+                    } else {
+                        R.string.correction__auto_correction__disabled
+                    }
+                )
+            )
+        }
+    }
+
+    /**
+     * Computes a correction for the word which is currently composed by the user.
+     *
+     * A correction is only computed if the automatic correction is enabled by the user, if the word is not part of
+     * the word list of the active language and if a similar word exists in it.
+     *
+     * @return The correction candidate or null if the word should not be corrected.
+     */
+    private fun getAutoCorrection(): WordSuggestionCandidate? {
+        if (!prefs.correction.autoCorrectionEnabled.get()) return null
+        val word = editorInstance.activeContent.composingText.trim()
+        if (word.isEmpty() || word.length > MaxAutoCorrectionWordLength) return null
+        val language = subtypeManager.activeSubtype.primaryLocale.language.lowercase()
+        val enabledLanguages = LatinDictionaries.parseLanguages(prefs.suggestion.enabledLanguages.get())
+        if (language !in enabledLanguages && LatinDictionaries.FallbackLanguage !in enabledLanguages) {
+            return null
+        }
+        val dictionary = LatinDictionaries.getIfLoaded(language)?.takeIf { it.size > 0 }
+            ?: LatinDictionaries.getIfLoaded(LatinDictionaries.FallbackLanguage)?.takeIf { it.size > 0 }
+            ?: return null
+        if (dictionary.contains(word)) return null
+        val nearMiss = dictionary.nearMisses(word, 1).firstOrNull() ?: return null
+        val corrected = if (word.first().isUpperCase()) {
+            nearMiss.word.replaceFirstChar { it.uppercaseChar() }
+        } else {
+            nearMiss.word
+        }
+        return WordSuggestionCandidate(
+            text = corrected,
+            confidence = 1.0,
+            isEligibleForAutoCommit = false,
+            isEligibleForUserRemoval = false,
+            sourceProvider = null,
         )
     }
 

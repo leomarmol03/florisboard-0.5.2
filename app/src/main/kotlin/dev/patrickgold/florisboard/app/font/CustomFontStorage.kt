@@ -22,6 +22,8 @@ import android.provider.OpenableColumns
 import dev.patrickgold.florisboard.lib.devtools.flogError
 import java.io.DataInputStream
 import java.io.File
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.florisboard.lib.kotlin.io.subDir
 
 /**
@@ -52,6 +54,21 @@ object CustomFontStorage {
 
     /** The tables which hold the outlines of a font. */
     private val OUTLINE_TABLES = setOf("glyf", "CFF ", "CFF2")
+
+    /**
+     * A counter which is increased whenever the fonts of the app change.
+     *
+     * The theme of the keyboard is compiled with the font of the user, therefore the theme has to be recompiled
+     * whenever a font is added, removed or restored. As the keyboard is not able to observe the files dir directly,
+     * this counter is used as a trigger for the recompilation.
+     */
+    private val _revision = MutableStateFlow(0L)
+    val revision = _revision.asStateFlow()
+
+    /** Notifies the observers that the fonts of the app have changed. */
+    fun notifyChanged() {
+        _revision.value = _revision.value + 1
+    }
 
     /** The mime types which are used to select a font file from the storage of the device. */
     val FONT_MIME_TYPES = arrayOf(
@@ -97,6 +114,7 @@ object CustomFontStorage {
                 file.outputStream().use { output -> input.copyTo(output) }
             } ?: error("Unable to open the font file")
             check(isFontFile(file)) { "The selected file is not a valid ttf or otf font file" }
+            notifyChanged()
             fileName
         }.onFailure { error ->
             target?.delete()
@@ -107,6 +125,7 @@ object CustomFontStorage {
     /** Deletes the font with the given [name] from the font directory of the app. */
     fun deleteFont(context: Context, name: String) {
         runCatching { fontFile(context, name)?.delete() }
+        notifyChanged()
     }
 
     /**
