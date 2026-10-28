@@ -30,16 +30,16 @@ import org.florisboard.lib.snygg.value.SnyggCustomFontFamilyValue
 
 val FlorisImeThemeBaseStyle = SnyggStylesheet.v2 {
     /**
-     * The bundled "Google Sans" font, which is used for all text of the keyboard. Note that this is the freely
-     * redistributable "Figtree" font, which is a very close match to the proprietary font of Google.
+     * The font which the user has added from the storage of the device. If no font has been selected, the default
+     * system font is used instead.
      */
-    font(FlorisImeFont.GoogleSans) {
+    font(FlorisImeFont.Custom) {
         add {
-            src = uri(FlorisImeFont.GoogleSansUri)
+            src = uri(FlorisImeFont.CustomUri)
             fontWeight = fontWeight(FontWeight.Normal)
         }
         add {
-            src = uri(FlorisImeFont.GoogleSansUri)
+            src = uri(FlorisImeFont.CustomUri)
             fontWeight = fontWeight(FontWeight.Bold)
         }
     }
@@ -64,7 +64,7 @@ val FlorisImeThemeBaseStyle = SnyggStylesheet.v2 {
     }
 
     FlorisImeUi.Root.elementName {
-        fontFamily = SnyggCustomFontFamilyValue(FlorisImeFont.GoogleSans)
+        fontFamily = SnyggCustomFontFamilyValue(FlorisImeFont.Custom)
     }
     FlorisImeUi.Window.elementName {
         background = `var`("--background")
@@ -306,6 +306,10 @@ val FlorisImeThemeBaseStyle = SnyggStylesheet.v2 {
     }
     FlorisImeUi.ClipboardItemDeleteIcon.elementName {
         foreground = rgbaColor(220, 38, 38)
+        fontSize = fontSize(20.sp)
+    }
+    FlorisImeUi.ClipboardItemCheckbox.elementName {
+        foreground = `var`("--on-surface")
         fontSize = fontSize(20.sp)
     }
     FlorisImeUi.ClipboardContent.elementName {

@@ -305,6 +305,16 @@ class ClipboardManager(
     }
 
     /**
+     * Deletes the given items from the clipboard history, no matter if they are pinned or not.
+     *
+     * @param items The items which should be deleted.
+     */
+    fun deleteClips(items: List<ClipboardItem>) {
+        if (items.isEmpty()) return
+        clearExactHistory(items)
+    }
+
+    /**
      * Clears all unpinned items from the clipboard history
      */
     fun clearHistory() {

@@ -36,6 +36,7 @@ import dev.patrickgold.florisboard.lib.util.NetworkUtils
 import dev.patrickgold.florisboard.subtypeManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -73,6 +74,7 @@ class NlpManager(context: Context) {
     private val providersForceSuggestionOn = mutableMapOf<String, Boolean>()
 
     private val internalSuggestionsGuard = Mutex()
+    private var suggestionJob: Job? = null
     private var internalSuggestions by Delegates.observable(SystemClock.uptimeMillis() to listOf<SuggestionCandidate>()) { _, _, _ ->
         scope.launch { assembleCandidates() }
     }
@@ -198,7 +200,10 @@ class NlpManager(context: Context) {
 
     fun suggest(subtype: Subtype, content: EditorContent) {
         val reqTime = SystemClock.uptimeMillis()
-        scope.launch {
+        // A new request supersedes the previous one, so that the work of an outdated request is not continued
+        // while the user is typing quickly.
+        suggestionJob?.cancel()
+        suggestionJob = scope.launch {
             val emojiSuggestions = when {
                 prefs.emoji.suggestionEnabled.get() -> {
                     emojiSuggestionProvider.suggest(
@@ -238,15 +243,23 @@ class NlpManager(context: Context) {
 
     fun suggestDirectly(suggestions: List<SuggestionCandidate>) {
         val reqTime = SystemClock.uptimeMillis()
-        runBlocking {
-            internalSuggestions = reqTime to suggestions
+        scope.launch {
+            internalSuggestionsGuard.withLock {
+                if (internalSuggestions.first < reqTime) {
+                    internalSuggestions = reqTime to suggestions
+                }
+            }
         }
     }
 
     fun clearSuggestions() {
         val reqTime = SystemClock.uptimeMillis()
-        runBlocking {
-            internalSuggestions = reqTime to emptyList()
+        scope.launch {
+            internalSuggestionsGuard.withLock {
+                if (internalSuggestions.first < reqTime) {
+                    internalSuggestions = reqTime to emptyList()
+                }
+            }
         }
     }
 
@@ -277,29 +290,31 @@ class NlpManager(context: Context) {
         return runBlocking { getSuggestionProvider(subtype).getFrequencyForWord(subtype, word) }
     }
 
-    private fun assembleCandidates() {
-        runBlocking {
-            val candidates = when {
-                isSuggestionOn() -> {
-                    clipboardSuggestionProvider.suggest(
-                        subtype = Subtype.DEFAULT,
-                        content = editorInstance.activeContent,
-                        maxCandidateCount = 8,
-                        allowPossiblyOffensive = !prefs.suggestion.blockPossiblyOffensive.get(),
-                        isPrivateSession = keyboardManager.activeState.isIncognitoMode,
-                    ).ifEmpty {
-                        buildList {
-                            internalSuggestionsGuard.withLock {
-                                addAll(internalSuggestions.second)
-                            }
+    private suspend fun assembleCandidates() {
+        val candidates = when {
+            isSuggestionOn() -> {
+                clipboardSuggestionProvider.suggest(
+                    subtype = Subtype.DEFAULT,
+                    content = editorInstance.activeContent,
+                    maxCandidateCount = 8,
+                    allowPossiblyOffensive = !prefs.suggestion.blockPossiblyOffensive.get(),
+                    isPrivateSession = keyboardManager.activeState.isIncognitoMode,
+                ).ifEmpty {
+                    buildList {
+                        internalSuggestionsGuard.withLock {
+                            addAll(internalSuggestions.second)
                         }
                     }
                 }
-                else -> emptyList()
             }
-            activeCandidates = candidates
-            autoExpandCollapseSmartbarActions(candidates, NlpInlineAutofill.suggestions.value)
+            else -> emptyList()
         }
+        // Only publish the candidates if they have actually changed, so that the smartbar does not recompose
+        // for every single keystroke.
+        if (activeCandidates != candidates) {
+            activeCandidates = candidates
+        }
+        autoExpandCollapseSmartbarActions(candidates, NlpInlineAutofill.suggestions.value)
     }
 
     fun autoExpandCollapseSmartbarActions(list1: List<*>?, list2: List<*>?) {
@@ -318,8 +333,14 @@ class NlpManager(context: Context) {
         val isSelection = editorInstance.activeContent.selection.isSelectionMode
         val isExpanded = list1.isNullOrEmpty() && list2.isNullOrEmpty() || isSelection
         scope.launch {
-            prefs.smartbar.sharedActionsExpandWithAnimation.set(false)
-            prefs.smartbar.sharedActionsExpanded.set(isExpanded)
+            // Only write the preferences if the value has actually changed, so that the smartbar does not
+            // recompose for every single keystroke.
+            if (prefs.smartbar.sharedActionsExpandWithAnimation.get()) {
+                prefs.smartbar.sharedActionsExpandWithAnimation.set(false)
+            }
+            if (prefs.smartbar.sharedActionsExpanded.get() != isExpanded) {
+                prefs.smartbar.sharedActionsExpanded.set(isExpanded)
+            }
         }
     }
 

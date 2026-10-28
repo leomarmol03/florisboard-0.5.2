@@ -17,17 +17,23 @@
 package dev.patrickgold.florisboard.ime.theme
 
 import android.content.Context
+import dev.patrickgold.florisboard.app.font.CustomFontStorage
 import dev.patrickgold.florisboard.lib.devtools.flogError
 import org.florisboard.lib.kotlin.io.subFile
 import org.florisboard.lib.snygg.value.SnyggAssetResolver
 import java.io.File
 import java.net.URI
 
-class FlorisAssetResolver(val context: Context, val themeInfo: ThemeManager.ThemeInfo) : SnyggAssetResolver {
+class FlorisAssetResolver(
+    val context: Context,
+    val themeInfo: ThemeManager.ThemeInfo,
+    val customFontName: String = CustomFontStorage.NO_FONT,
+) : SnyggAssetResolver {
     override fun resolveAbsolutePath(uri: String) = runCatching {
         val uri = URI.create(uri)
         when (uri.scheme) {
             "flex" -> resolveThemeAsset(uri)
+            "font" -> resolveCustomFont(uri)
             "res" -> resolveResourceAsset(uri)
             else -> error("Unsupported URI scheme '${uri.scheme}'")
         }
@@ -57,7 +63,20 @@ class FlorisAssetResolver(val context: Context, val themeInfo: ThemeManager.Them
     }
 
     /**
-     * Resolves a URI which points to a resource of the app, e.g. `res:/font/google_sans`.
+     * Resolves a URI which points to the custom font which the user has selected.
+     *
+     * If no font has been selected by the user, the resolution fails and the default system font is used instead.
+     */
+    private fun resolveCustomFont(uri: URI): String {
+        require(uri.authority.isNullOrEmpty())
+        val fontFile = checkNotNull(CustomFontStorage.fontFile(context, customFontName)) {
+            "No custom font has been selected by the user"
+        }
+        return fontFile.absolutePath
+    }
+
+    /**
+     * Resolves a URI which points to a resource of the app, e.g. `res:/raw/example`.
      *
      * As the snygg theme compiler expects an absolute path of a file, the resource is copied into the cache
      * directory of the app. The copy is only created once and is reused afterwards.

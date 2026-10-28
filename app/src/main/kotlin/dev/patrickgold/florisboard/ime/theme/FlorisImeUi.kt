@@ -105,6 +105,10 @@ enum class FlorisImeUi(val elementName: String, val resId: Int?) {
         elementName = "clipboard-item",
         resId = R.string.snygg__rule_element__clipboard_item,
     ),
+    ClipboardItemCheckbox(
+        elementName = "clipboard-item-checkbox",
+        resId = R.string.snygg__rule_element__clipboard_item_checkbox,
+    ),
     ClipboardItemDeleteBackground(
         elementName = "clipboard-item-delete-background",
         resId = R.string.snygg__rule_element__clipboard_item_delete_background,

@@ -17,15 +17,15 @@
 package dev.patrickgold.florisboard.ime.theme
 
 /**
- * Holds the names of the fonts which are bundled with the app.
+ * Holds the name and the uri of the font which the user has provided.
  *
- * The "Google Sans" font is a freely redistributable stand-in for the proprietary font of Google, which is based on
- * the "Figtree" font. The license of the bundled font can be found in the assets of the app.
+ * The font is not bundled with the app, but can be added by the user from the storage of the device. If no font has
+ * been selected, the default system font is used instead.
  */
 object FlorisImeFont {
-    /** The name of the bundled "Google Sans" font. */
-    const val GoogleSans = "Google Sans"
+    /** The name of the font which the user has provided. */
+    const val Custom = "Custom"
 
-    /** The resource path of the bundled "Google Sans" font. */
-    const val GoogleSansUri = "res:/font/google_sans"
+    /** The uri of the font which the user has provided. */
+    const val CustomUri = "font:/custom"
 }

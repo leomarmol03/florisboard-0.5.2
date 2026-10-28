@@ -658,6 +658,14 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "other__show_app_icon",
             default = true,
         )
+        /**
+         * The file name of the custom font which the user has selected. An empty string means that the default
+         * system font is used.
+         */
+        val customFont = string(
+            key = "other__custom_font",
+            default = "",
+        )
     }
 
     val physicalKeyboard = PhysicalKeyboard()

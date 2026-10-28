@@ -26,18 +26,18 @@
     "--shape-variant": "rounded-corner(12dp, 12dp, 12dp, 12dp)",
     "--shape-chip": "rounded-corner(50%, 50%, 50%, 50%)"
   },
-  "@font `Google Sans`": [
+  "@font `Custom`": [
     {
-      "src": "uri(`res:/font/google_sans`)",
+      "src": "uri(`font:/custom`)",
       "font-weight": "normal"
     },
     {
-      "src": "uri(`res:/font/google_sans`)",
+      "src": "uri(`font:/custom`)",
       "font-weight": "bold"
     }
   ],
   "root": {
-    "font-family": "`Google Sans`"
+    "font-family": "`Custom`"
   },
 
   "window": {
@@ -318,6 +318,10 @@
     "shadow-elevation": "2dp",
     "text-max-lines": "10",
     "text-overflow": "ellipsis"
+  },
+  "clipboard-item-checkbox": {
+    "foreground": "var(--on-surface)",
+    "font-size": "20sp"
   },
   "clipboard-item-delete-background": {
     "background": "transparent",

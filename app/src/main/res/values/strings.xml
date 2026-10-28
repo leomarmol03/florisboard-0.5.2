@@ -252,6 +252,7 @@
     <string name="snygg__rule_element__clipboard_filter_chip_text">Clipboard filter chip text</string>
     <string name="snygg__rule_element__clipboard_grid">Clipboard grid</string>
     <string name="snygg__rule_element__clipboard_item">Clipboard item</string>
+    <string name="snygg__rule_element__clipboard_item_checkbox">Clipboard item checkbox</string>
     <string name="snygg__rule_element__clipboard_item_delete_background">Clipboard item delete background</string>
     <string name="snygg__rule_element__clipboard_item_delete_icon">Clipboard item delete icon</string>
     <string name="snygg__rule_element__clipboard_item_description">Clipboard item description</string>
@@ -626,6 +627,17 @@
 
     <!-- Physical keyboard -->
     <string name="physical_keyboard__title">Physical keyboard</string>
+    <string name="settings__custom_font__title" comment="Title of the custom font settings">Custom font</string>
+    <string name="settings__custom_font__summary" comment="Summary of the custom font settings">Add a TTF or OTF font from the storage of the device and use it everywhere</string>
+    <string name="settings__custom_font__add__label" comment="Label of the button which adds a custom font">Add a font</string>
+    <string name="settings__custom_font__add__summary" comment="Summary of the button which adds a custom font">Pick a .ttf or .otf file from the storage of the device</string>
+    <string name="settings__custom_font__add__success" comment="Toast which is shown after a font has been added">The font has been added</string>
+    <string name="settings__custom_font__add__failure" comment="Toast which is shown after a font could not be added">The font could not be added</string>
+    <string name="settings__custom_font__available__title" comment="Title of the list of available fonts">Available fonts</string>
+    <string name="settings__custom_font__system_default" comment="Name of the default system font">System default</string>
+    <string name="settings__custom_font__remove__label" comment="Label of the button which removes the selected custom font">Remove the selected font</string>
+    <string name="settings__custom_font__remove__summary" comment="Summary of the button which removes the selected custom font">Deletes the selected font file from the storage of the app</string>
+    <string name="settings__custom_font__remove__success" comment="Toast which is shown after a font has been removed">The font has been removed</string>
     <string name="physical_keyboard__system_settings__title">System physical keyboard settings</string>
     <string name="physical_keyboard__system_settings__summary">Layouts, keyboard shortcuts and modifier keys</string>
     <string name="physical_keyboard__system_settings__summary_not_attached">Only available when keyboard is attached</string>
@@ -644,6 +656,7 @@
     <string name="backup_and_restore__back_up__files_ime_keyboard">Keyboard extensions</string>
     <string name="backup_and_restore__back_up__files_ime_spelling">Spelling extensions / dictionaries</string>
     <string name="backup_and_restore__back_up__files_ime_theme">Theme extensions</string>
+    <string name="backup_and_restore__back_up__files_custom_fonts">Custom fonts</string>
     <string name="backup_and_restore__back_up__files_clipboard_history">Clipboard history</string>
     <string name="backup_and_restore__back_up__files_clipboard_history__clipboard_text_items">Text items</string>
     <string name="backup_and_restore__back_up__files_clipboard_history__clipboard_image_items">Images</string>
@@ -696,6 +709,9 @@
     <string name="clipboard__tab_pinned">Pinned</string>
     <string name="clipboard__tab_recent">Recent</string>
     <string name="clipboard__swipe_to_delete__hint">Swipe an item to the side to delete it</string>
+    <string name="clipboard__selection__count">{count} selected</string>
+    <string name="clipboard__selection__select_all">Select all</string>
+    <string name="clipboard__selection__delete_selected">Delete selected items</string>
     <string name="clipboard__item_description_email">Email</string>
     <string name="clipboard__item_description_url">URL</string>
     <string name="clipboard__item_description_phone">Phone</string>

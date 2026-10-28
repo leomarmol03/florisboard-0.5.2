@@ -43,6 +43,7 @@ import androidx.core.content.FileProvider
 import dev.patrickgold.florisboard.BuildConfig
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceModel
+import dev.patrickgold.florisboard.app.font.CustomFontStorage
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.app.LocalNavController
 import dev.patrickgold.florisboard.cacheManager
@@ -93,6 +94,7 @@ object Backup {
         var jetprefDatastore by mutableStateOf(true)
         var imeKeyboard by mutableStateOf(true)
         var imeTheme by mutableStateOf(true)
+        var customFonts by mutableStateOf(true)
         var clipboardTextItems by mutableStateOf(false)
         var clipboardImageItems by mutableStateOf(false)
         var clipboardVideoItems by mutableStateOf(false)
@@ -120,7 +122,8 @@ object Backup {
         }
 
         fun atLeastOneSelected(): Boolean {
-            return jetprefDatastore || imeKeyboard || imeTheme || clipboardTextItems || clipboardImageItems || clipboardVideoItems
+            return jetprefDatastore || imeKeyboard || imeTheme || customFonts ||
+                clipboardTextItems || clipboardImageItems || clipboardVideoItems
         }
     }
 
@@ -190,6 +193,13 @@ fun BackupScreen() = FlorisScreen {
         if (backupFilesSelector.imeTheme) {
             context.filesDir.subDir(ExtensionManager.IME_THEME_PATH).let { dir ->
                 dir.copyRecursively(workspaceFilesDir.subDir(ExtensionManager.IME_THEME_PATH))
+            }
+        }
+        if (backupFilesSelector.customFonts) {
+            context.filesDir.subDir(CustomFontStorage.FONT_DIR_NAME).let { dir ->
+                if (dir.exists()) {
+                    dir.copyRecursively(workspaceFilesDir.subDir(CustomFontStorage.FONT_DIR_NAME))
+                }
             }
         }
 
@@ -334,6 +344,11 @@ internal fun BackupFilesSelector(
             onClick = { filesSelector.imeTheme = !filesSelector.imeTheme },
             checked = filesSelector.imeTheme,
             text = stringRes(R.string.backup_and_restore__back_up__files_ime_theme),
+        )
+        CheckboxListItem(
+            onClick = { filesSelector.customFonts = !filesSelector.customFonts },
+            checked = filesSelector.customFonts,
+            text = stringRes(R.string.backup_and_restore__back_up__files_custom_fonts),
         )
 
         TriStateCheckboxListItem(

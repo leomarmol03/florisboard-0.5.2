@@ -17,42 +17,67 @@
 package dev.patrickgold.florisboard.app.apptheme
 
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import dev.patrickgold.florisboard.R
+import dev.patrickgold.florisboard.app.font.CustomFontStorage
 
 /**
- * The font family which is used throughout the settings app. This is the same font which is used for the keyboard
- * UI, so that both look and feel the same.
+ * Creates the font family of the custom font which the user has added from the storage of the device.
  *
- * Note that the bundled "Google Sans" font is a freely redistributable stand-in for the proprietary font of Google.
+ * If no font has been selected by the user, or if the selected font can no longer be found, `null` is returned and
+ * the default system font is used instead.
  */
-val GoogleSansFontFamily = FontFamily(
-    Font(R.font.google_sans, weight = FontWeight.Normal),
-    Font(R.font.google_sans, weight = FontWeight.Bold),
-)
+@Composable
+fun rememberCustomFontFamily(customFontName: String): FontFamily? {
+    val context = LocalContext.current
+    return remember(customFontName) {
+        if (customFontName.isBlank()) {
+            null
+        } else {
+            CustomFontStorage.fontFile(context, customFontName)?.let { fontFile ->
+                FontFamily(
+                    Font(fontFile, weight = FontWeight.Normal),
+                    Font(fontFile, weight = FontWeight.Bold),
+                )
+            }
+        }
+    }
+}
 
-private fun TextStyle.withGoogleSans(): TextStyle = copy(fontFamily = GoogleSansFontFamily)
+private fun TextStyle.withFontFamily(fontFamily: FontFamily?): TextStyle =
+    if (fontFamily == null) this else copy(fontFamily = fontFamily)
 
-// Set of Material typography styles to start with
-val Typography = Typography().run {
-    copy(
-        displayLarge = displayLarge.withGoogleSans(),
-        displayMedium = displayMedium.withGoogleSans(),
-        displaySmall = displaySmall.withGoogleSans(),
-        headlineLarge = headlineLarge.withGoogleSans(),
-        headlineMedium = headlineMedium.withGoogleSans(),
-        headlineSmall = headlineSmall.withGoogleSans(),
-        titleLarge = titleLarge.withGoogleSans(),
-        titleMedium = titleMedium.withGoogleSans(),
-        titleSmall = titleSmall.withGoogleSans(),
-        bodyLarge = bodyLarge.withGoogleSans(),
-        bodyMedium = bodyMedium.withGoogleSans(),
-        bodySmall = bodySmall.withGoogleSans(),
-        labelLarge = labelLarge.withGoogleSans(),
-        labelMedium = labelMedium.withGoogleSans(),
-        labelSmall = labelSmall.withGoogleSans(),
-    )
+/**
+ * Creates the typography of the settings app. The custom font of the user is used throughout the settings app, so
+ * that it matches the look and feel of the keyboard UI.
+ */
+@Composable
+fun rememberFlorisTypography(customFontName: String): Typography {
+    val fontFamily = rememberCustomFontFamily(customFontName)
+    return remember(fontFamily) {
+        Typography().run {
+            copy(
+                displayLarge = displayLarge.withFontFamily(fontFamily),
+                displayMedium = displayMedium.withFontFamily(fontFamily),
+                displaySmall = displaySmall.withFontFamily(fontFamily),
+                headlineLarge = headlineLarge.withFontFamily(fontFamily),
+                headlineMedium = headlineMedium.withFontFamily(fontFamily),
+                headlineSmall = headlineSmall.withFontFamily(fontFamily),
+                titleLarge = titleLarge.withFontFamily(fontFamily),
+                titleMedium = titleMedium.withFontFamily(fontFamily),
+                titleSmall = titleSmall.withFontFamily(fontFamily),
+                bodyLarge = bodyLarge.withFontFamily(fontFamily),
+                bodyMedium = bodyMedium.withFontFamily(fontFamily),
+                bodySmall = bodySmall.withFontFamily(fontFamily),
+                labelLarge = labelLarge.withFontFamily(fontFamily),
+                labelMedium = labelMedium.withFontFamily(fontFamily),
+                labelSmall = labelSmall.withFontFamily(fontFamily),
+            )
+        }
+    }
 }

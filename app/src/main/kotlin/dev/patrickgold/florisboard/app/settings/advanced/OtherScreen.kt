@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Preview
 import androidx.compose.material.icons.filled.SettingsBackupRestore
+import androidx.compose.material.icons.filled.TextFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
@@ -155,6 +156,12 @@ fun OtherScreen() = FlorisScreen {
                 else -> null
             },
             enabledIf = { AndroidVersion.ATMOST_API28_P },
+        )
+        Preference(
+            icon = Icons.Default.TextFormat,
+            title = stringRes(R.string.settings__custom_font__title),
+            summary = stringRes(R.string.settings__custom_font__summary),
+            onClick = { navController.navigate(Routes.Settings.CustomFont) },
         )
         Preference(
             icon = ImageVector.vectorResource(R.drawable.ic_keyboard_keys),

@@ -51,13 +51,14 @@ fun FlorisImeTheme(content: @Composable () -> Unit) {
 
     val prefs by FlorisPreferenceStore
     val accentColor by prefs.theme.accentColor.observeAsState()
+    val customFontName by prefs.other.customFont.observeAsState()
 
     val activeThemeInfo by themeManager.activeThemeInfo.collectAsState()
     val activeConfig = remember(activeThemeInfo) { activeThemeInfo.config }
     val activeStyle = remember(activeThemeInfo) { activeThemeInfo.stylesheet }
 
-    val assetResolver = remember(activeThemeInfo) {
-        FlorisAssetResolver(context, activeThemeInfo)
+    val assetResolver = remember(activeThemeInfo, customFontName) {
+        FlorisAssetResolver(context, activeThemeInfo, customFontName)
     }
     val snyggTheme = rememberSnyggTheme(activeStyle, assetResolver)
     val fontSizeMultiplier = prefs.keyboard.fontSizeMultiplier()

@@ -1,0 +1,129 @@
+name: Release
+
+# Builds the signed release APK and publishes it as a github release, so that
+# the version can be downloaded and installed directly on a device.
+#
+# The workflow runs automatically whenever `main` is updated and can also be
+# triggered manually for any branch.
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+      - "fastlane/**"
+      - ".github/ISSUE_TEMPLATE/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Set up CMake and Ninja
+        uses: lukka/get-cmake@v4.0.2
+
+      - name: Set up Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          cargo --version
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build with Gradle
+        id: gradle_build
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew --stacktrace --console=plain assembleRelease 2>&1 | tee gradle-build.log
+
+      - name: Publish build errors
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          {
+            echo "### Gradle build errors"
+            echo '```'
+            grep -aE "^e: |error:|FAILURE:|What went wrong|> Task .* FAILED|Caused by|Could not|\.kt:[0-9]+:[0-9]+" gradle-build.log | head -n 200 || true
+            echo '```'
+          } > gradle-errors.md
+          gh api "repos/${GITHUB_REPOSITORY}/check-runs" \
+            -f name="gradle-errors" \
+            -f head_sha="${GITHUB_SHA}" \
+            -f status=completed \
+            -f conclusion=failure \
+            -f "output[title]=Gradle build errors" \
+            -f "output[summary]=Compiler and build errors, see output text." \
+            -F "output[text]=@gradle-errors.md" > /dev/null || true
+
+      - name: Verify the signature of the APK
+        id: verify_signature
+        shell: bash
+        run: |
+          set -o pipefail
+          APK_PATH=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+          echo "APK: ${APK_PATH}"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "${APK_PATH}" \
+            | tee apksigner-output.txt
+          grep -q "Verified using v2 scheme" apksigner-output.txt \
+            || grep -q "Verified using v3 scheme" apksigner-output.txt
+
+      - name: Publish the github release
+        id: publish_release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION_NAME=$(grep -E '^projectVersionName=' gradle.properties | cut -d= -f2)
+          VERSION_CODE=$(grep -E '^projectVersionCode=' gradle.properties | cut -d= -f2)
+          TAG="v${VERSION_NAME}"
+          APK_PATH=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+          ASSET_NAME="florisboard-${VERSION_NAME}-${VERSION_CODE}-release.apk"
+          cp "${APK_PATH}" "${ASSET_NAME}"
+
+          if gh release view "${TAG}" > /dev/null 2>&1; then
+            echo "The release ${TAG} already exists, updating it."
+            gh release upload "${TAG}" "${ASSET_NAME}" --clobber
+            gh release edit "${TAG}" \
+              --title "FlorisBoard ${VERSION_NAME} (${VERSION_CODE})" \
+              --notes "$(cat release-notes.md)"
+          else
+            echo "Creating a new release ${TAG}."
+            gh release create "${TAG}" "${ASSET_NAME}" \
+              --title "FlorisBoard ${VERSION_NAME} (${VERSION_CODE})" \
+              --notes "$(cat release-notes.md)"
+          fi
+
+      - name: Upload release APK as artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30

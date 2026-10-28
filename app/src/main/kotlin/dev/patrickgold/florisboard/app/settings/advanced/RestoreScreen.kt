@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import dev.patrickgold.florisboard.BuildConfig
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceModel
+import dev.patrickgold.florisboard.app.font.CustomFontStorage
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.app.LocalNavController
 import dev.patrickgold.florisboard.cacheManager
@@ -175,6 +176,23 @@ fun RestoreScreen() = FlorisScreen {
             }
             if (srcDir.exists()) {
                 srcDir.copyRecursively(dstDir, overwrite = true)
+            }
+        }
+        if (restoreFilesSelector.customFonts) {
+            val srcDir = workspaceFilesDir.subDir(CustomFontStorage.FONT_DIR_NAME)
+            val dstDir = context.filesDir.subDir(CustomFontStorage.FONT_DIR_NAME)
+            if (shouldReset) {
+                dstDir.deleteContentsRecursively()
+            }
+            if (srcDir.exists()) {
+                srcDir.copyRecursively(dstDir, overwrite = true)
+            }
+            // If the restored preferences point to a font which is not present, the selection is reset, so that
+            // the default system font is used instead of a broken font reference.
+            val prefs by FlorisPreferenceStore
+            val selectedFont = prefs.other.customFont.get()
+            if (selectedFont.isNotBlank() && CustomFontStorage.fontFile(context, selectedFont) == null) {
+                prefs.other.customFont.set(CustomFontStorage.NO_FONT)
             }
         }
         val clipboardManager = context.clipboardManager().value
