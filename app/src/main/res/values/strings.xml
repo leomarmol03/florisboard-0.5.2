@@ -79,6 +79,10 @@
     <string name="quick_action__ime_ui_mode_clipboard__tooltip">Open clipboard history</string>
     <string name="quick_action__ime_ui_mode_media" comment="Please mind the limited available space for the quick action strings">Emoji</string>
     <string name="quick_action__ime_ui_mode_media__tooltip">Open emoji panel</string>
+    <string name="quick_action__ime_ui_mode_translate" comment="Please mind the limited available space for the quick action strings">Translate</string>
+    <string name="quick_action__ime_ui_mode_translate__tooltip">Translate the text of the input field</string>
+    <string name="quick_action__text_editor" comment="Please mind the limited available space for the quick action strings">Editor</string>
+    <string name="quick_action__text_editor__tooltip">Open the text editor</string>
     <string name="quick_action__language_switch" comment="Please mind the limited available space for the quick action strings">Switch language</string>
     <string name="quick_action__language_switch__tooltip">Perform language switch</string>
     <string name="quick_action__settings" comment="Please mind the limited available space for the quick action strings">Settings</string>
@@ -254,6 +258,8 @@
     <string name="snygg__rule_element__clipboard_filter_chip_text">Clipboard filter chip text</string>
     <string name="snygg__rule_element__clipboard_grid">Clipboard grid</string>
     <string name="snygg__rule_element__clipboard_item">Clipboard item</string>
+    <string name="snygg__rule_element__text_editor_panel">Text editor panel</string>
+    <string name="snygg__rule_element__translate_panel">Translation panel</string>
     <string name="snygg__rule_element__clipboard_item_checkbox">Clipboard item checkbox</string>
     <string name="snygg__rule_element__clipboard_item_delete_background">Clipboard item delete background</string>
     <string name="snygg__rule_element__clipboard_item_delete_icon">Clipboard item delete icon</string>
@@ -478,6 +484,25 @@
 
     <!-- Typing strings -->
     <string name="settings__typing__title" comment="Title of Typing screen">Typing</string>
+    <string name="settings__translate__title" comment="Title of the translation screen">Translation</string>
+    <string name="pref__translate__enabled__label">Enable the translator</string>
+    <string name="pref__translate__enabled__summary">Show a translate action in the keyboard, which translates the text of the input field with the translate api of yandex or google</string>
+    <string name="pref__translate__group__label">Translation settings</string>
+    <string name="pref__translate__provider__label">Translation provider</string>
+    <string name="pref__translate__yandex_api_key__label">Yandex api key</string>
+    <string name="pref__translate__yandex_api_key__summary">No api key has been set</string>
+    <string name="pref__translate__target_language__label">Target language</string>
+    <string name="enum__translation_provider__yandex">Yandex</string>
+    <string name="enum__translation_provider__google">Google</string>
+    <string name="text_editor__title">Text editor</string>
+    <string name="text_editor__hint">Write a text with the keyboard of the device</string>
+    <string name="translate__title">Translate</string>
+    <string name="translate__source">Original</string>
+    <string name="translate__result">Translation</string>
+    <string name="translate__result_empty">The translation is empty</string>
+    <string name="translate__loading">Translating…</string>
+    <string name="translate__error">The translation failed: {error}</string>
+    <string name="translate__no_text">There is no text to translate</string>
     <string name="pref__suggestion__title" comment="Preference group title">Suggestions</string>
     <string name="pref__suggestion__enabled__label" comment="Preference title">Display suggestions</string>
     <string name="pref__suggestion__enabled__summary" comment="Preference summary">Provides suggestions while you type</string>
@@ -728,6 +753,8 @@
     <string name="clip__pin_item">Pin item</string>
     <string name="clip__delete_item">Delete</string>
     <string name="clip__paste_item">Paste</string>
+    <string name="clip__edit_item">Edit item</string>
+    <string name="clip__share_item">Share item</string>
     <string name="clip__back_to_text_input">Back to text input</string>
     <string name="clip__cant_paste">This app doesn\'t allow pasting this content.</string>
     <string name="clipboard__cleared_primary_clip">Cleared primary clip</string>

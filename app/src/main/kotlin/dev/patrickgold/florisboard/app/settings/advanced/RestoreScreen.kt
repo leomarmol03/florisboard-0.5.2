@@ -60,6 +60,7 @@ import dev.patrickgold.jetpref.datastore.runtime.AndroidAppDataStorage
 import dev.patrickgold.jetpref.datastore.runtime.FileBasedStorage
 import dev.patrickgold.jetpref.datastore.runtime.ImportStrategy
 import dev.patrickgold.jetpref.datastore.ui.Preference
+import java.io.File
 import java.io.FileNotFoundException
 import java.text.DateFormat
 import java.util.*
@@ -149,6 +150,20 @@ fun RestoreScreen() = FlorisScreen {
         val workspace = restoreWorkspace!!
         val shouldReset = importStrategy == ImportStrategy.Erase
         val workspaceFilesDir = workspace.outputDir.subDir("files")
+        val prefs by FlorisPreferenceStore
+        // The state of the restore is ignored for the custom fonts: the font which is currently selected in the
+        // settings is kept and applied forcibly after the restore. A backup may have been created on another device
+        // with another font or without any font at all, which would break the keyboard.
+        val selectedFont = prefs.other.customFont.get()
+        // A copy of the selected font is kept in the cache dir, so that the font also survives a restore which
+        // erases all fonts of the app.
+        val fontBackupFile = CustomFontStorage.fontFile(context, selectedFont)?.let { fontFile ->
+            val backupFile = File(context.cacheDir, "selected_font_backup")
+            runCatching {
+                fontFile.copyTo(backupFile, overwrite = true)
+                backupFile
+            }.getOrNull()
+        }
         // The custom fonts are restored before the preferences, because the preferences hold the name of the
         // selected font. If the preferences were restored first, the theme of the keyboard would be compiled
         // without the font, as the font file would not be present yet.
@@ -194,14 +209,26 @@ fun RestoreScreen() = FlorisScreen {
             }
         }
         if (restoreFilesSelector.customFonts) {
-            // If the restored preferences point to a font which is not present, the selection is reset, so that
-            // the default system font is used instead of a broken font reference.
-            val prefs by FlorisPreferenceStore
-            val selectedFont = prefs.other.customFont.get()
-            if (selectedFont.isNotBlank() && CustomFontStorage.fontFile(context, selectedFont) == null) {
+            // The font which is selected in the settings is applied forcibly. If the file of the font is not
+            // present, for example because the restore erased the fonts of the app, then the copy which was made
+            // before the restore is used again.
+            if (selectedFont.isNotBlank()) {
+                if (CustomFontStorage.fontFile(context, selectedFont) == null && fontBackupFile != null) {
+                    runCatching {
+                        fontBackupFile.copyTo(
+                            File(CustomFontStorage.fontDir(context), selectedFont),
+                            overwrite = true,
+                        )
+                    }
+                }
+                prefs.other.customFont.set(selectedFont)
+            } else {
                 prefs.other.customFont.set(CustomFontStorage.NO_FONT)
             }
+            // The theme of the keyboard has to be recompiled, as the font of the user is applied.
+            CustomFontStorage.notifyChanged()
         }
+        fontBackupFile?.delete()
         val clipboardManager = context.clipboardManager().value
         if (shouldReset) {
             clipboardManager.clearFullHistory()

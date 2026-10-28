@@ -40,6 +40,7 @@ import dev.patrickgold.florisboard.ime.smartbar.ExtendedActionsPlacement
 import dev.patrickgold.florisboard.ime.smartbar.IncognitoDisplayMode
 import dev.patrickgold.florisboard.ime.smartbar.SmartbarLayout
 import dev.patrickgold.florisboard.ime.text.gestures.SwipeAction
+import dev.patrickgold.florisboard.ime.translate.TranslationProvider
 import dev.patrickgold.florisboard.ime.text.key.KeyHintMode
 import dev.patrickgold.florisboard.ime.text.key.UtilityKeyAction
 import dev.patrickgold.florisboard.ime.theme.ThemeMode
@@ -686,6 +687,18 @@ private val ENUM_DISPLAY_ENTRIES = mapOf<Pair<KClass<*>, String>, @Composable ()
             entry(
                 key = SwipeAction.DELETE_WORD,
                 label = stringRes(R.string.enum__swipe_action__delete_word),
+            )
+        }
+    },
+    TranslationProvider::class to DEFAULT to {
+        listPrefEntries {
+            entry(
+                key = TranslationProvider.YANDEX,
+                label = stringRes(R.string.enum__translation_provider__yandex),
+            )
+            entry(
+                key = TranslationProvider.GOOGLE,
+                label = stringRes(R.string.enum__translation_provider__google),
             )
         }
     },

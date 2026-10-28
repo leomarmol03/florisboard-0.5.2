@@ -79,6 +79,7 @@ import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.app.devtools.DevtoolsOverlay
 import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.ime.clipboard.ClipboardInputLayout
+import dev.patrickgold.florisboard.ime.translate.TranslatePanel
 import dev.patrickgold.florisboard.ime.core.SelectSubtypePanel
 import dev.patrickgold.florisboard.ime.core.isSubtypeSelectionShowing
 import dev.patrickgold.florisboard.ime.editor.EditorRange
@@ -679,6 +680,7 @@ class FlorisImeService : LifecycleInputMethodService() {
                                 ImeUiMode.TEXT -> TextInputLayout()
                                 ImeUiMode.MEDIA -> MediaInputLayout()
                                 ImeUiMode.CLIPBOARD -> ClipboardInputLayout()
+                                ImeUiMode.TRANSLATE -> TranslatePanel()
                             }
                         }
                     }

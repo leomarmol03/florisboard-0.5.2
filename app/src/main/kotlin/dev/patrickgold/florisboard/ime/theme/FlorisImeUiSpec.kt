@@ -197,6 +197,16 @@ object FlorisImeUiSpec : SnyggSpecDecl({
         foreground()
     }
 
+    element(FlorisImeUi.TextEditorPanel) {
+        background()
+        foreground()
+        font()
+    }
+    element(FlorisImeUi.TranslatePanel) {
+        background()
+        foreground()
+        font()
+    }
     element(FlorisImeUi.ClipboardHeader) {
         background()
         foreground()

@@ -12,6 +12,8 @@
     <string name="snygg__rule_element__clipboard_item_delete_background">Fondo de eliminación de ítem del portapapeles</string>
     <string name="snygg__rule_element__clipboard_item_delete_icon">Icono de eliminación de ítem del portapapeles</string>
     <string name="snygg__rule_element__clipboard_item_checkbox">Casilla de selección de ítem del portapapeles</string>
+    <string name="snygg__rule_element__text_editor_panel">Panel del editor de texto</string>
+    <string name="snygg__rule_element__translate_panel">Panel de traducción</string>
 
     <string name="clipboard__tab_pinned">Anclados</string>
     <string name="clipboard__tab_recent">Recientes</string>
@@ -42,4 +44,32 @@
     <string name="pref__correction__auto_correction_enabled__summary">Corrige automáticamente las palabras escritas, si existe una palabra similar en la lista de palabras del idioma activo</string>
     <string name="correction__auto_correction__enabled">La corrección automática está activada</string>
     <string name="correction__auto_correction__disabled">La corrección automática está desactivada</string>
+
+    <string name="clip__edit_item">Editar el elemento</string>
+    <string name="clip__share_item">Compartir el elemento</string>
+
+    <string name="quick_action__ime_ui_mode_translate">Traducir</string>
+    <string name="quick_action__ime_ui_mode_translate__tooltip">Traduce el texto del campo de entrada</string>
+    <string name="quick_action__text_editor">Editor</string>
+    <string name="quick_action__text_editor__tooltip">Abre el editor de texto</string>
+
+    <string name="settings__translate__title">Traducción</string>
+    <string name="pref__translate__enabled__label">Activar el traductor</string>
+    <string name="pref__translate__enabled__summary">Muestra una acción de traducción en el teclado, que traduce el texto del campo de entrada con la api de traducción de yandex o google</string>
+    <string name="pref__translate__group__label">Ajustes de traducción</string>
+    <string name="pref__translate__provider__label">Proveedor de traducción</string>
+    <string name="pref__translate__yandex_api_key__label">Clave de api de yandex</string>
+    <string name="pref__translate__yandex_api_key__summary">No se ha definido ninguna clave de api</string>
+    <string name="pref__translate__target_language__label">Idioma de destino</string>
+    <string name="enum__translation_provider__yandex">Yandex</string>
+    <string name="enum__translation_provider__google">Google</string>
+    <string name="text_editor__title">Editor de texto</string>
+    <string name="text_editor__hint">Escribe un texto con el teclado del dispositivo</string>
+    <string name="translate__title">Traducir</string>
+    <string name="translate__source">Original</string>
+    <string name="translate__result">Traducción</string>
+    <string name="translate__result_empty">La traducción está vacía</string>
+    <string name="translate__loading">Traduciendo…</string>
+    <string name="translate__error">La traducción ha fallado: {error}</string>
+    <string name="translate__no_text">No hay texto para traducir</string>
 </resources>

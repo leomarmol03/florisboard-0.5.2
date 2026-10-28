@@ -46,6 +46,7 @@ import dev.patrickgold.florisboard.ime.smartbar.ExtendedActionsPlacement
 import dev.patrickgold.florisboard.ime.smartbar.IncognitoDisplayMode
 import dev.patrickgold.florisboard.ime.smartbar.SmartbarLayout
 import dev.patrickgold.florisboard.ime.smartbar.quickaction.QuickAction
+import dev.patrickgold.florisboard.ime.translate.TranslationProvider
 import dev.patrickgold.florisboard.ime.smartbar.quickaction.QuickActionArrangement
 import dev.patrickgold.florisboard.ime.smartbar.quickaction.QuickActionJsonConfig
 import dev.patrickgold.florisboard.ime.text.gestures.SwipeAction
@@ -681,6 +682,38 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val showOnScreenKeyboard = boolean(
             key = "physical_keyboard__show_on_screen_keyboard",
             default = false,
+        )
+    }
+
+    val translate = Translate()
+    inner class Translate {
+        /**
+         * Whether the translator is enabled. The translator is only shown in the keyboard if it is enabled here.
+         */
+        val enabled = boolean(
+            key = "translate__enabled",
+            default = true,
+        )
+        /**
+         * The provider which is used to translate the text of the user.
+         */
+        val provider = enum(
+            key = "translate__provider",
+            default = TranslationProvider.GOOGLE,
+        )
+        /**
+         * The api key which is used for the translate api of yandex. The api key is not needed for the api of google.
+         */
+        val yandexApiKey = string(
+            key = "translate__yandex_api_key",
+            default = "",
+        )
+        /**
+         * The language code of the language into which the text is translated, e.g. "es".
+         */
+        val targetLanguage = string(
+            key = "translate__target_language",
+            default = "en",
         )
     }
 

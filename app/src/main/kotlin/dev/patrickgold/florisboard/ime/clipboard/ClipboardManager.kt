@@ -371,6 +371,23 @@ class ClipboardManager(
         }
     }
 
+    /**
+     * Replaces the text of the given item of the clipboard history.
+     *
+     * @param item The item of the clipboard history which is updated.
+     * @param newText The new text of the item.
+     */
+    fun updateClipText(item: ClipboardItem, newText: String) {
+        if (item.type != ItemType.TEXT) return
+        ioScope.launch {
+            val updatedItem = item.copy(text = newText)
+            clipHistoryDao?.update(updatedItem)
+            if (primaryClip?.id == item.id) {
+                updatePrimaryClip(updatedItem)
+            }
+        }
+    }
+
     fun pinClip(item: ClipboardItem) {
         ioScope.launch {
             clipHistoryDao?.update(item.copy(isPinned = true))

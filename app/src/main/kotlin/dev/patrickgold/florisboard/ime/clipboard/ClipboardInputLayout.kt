@@ -17,6 +17,8 @@
 package dev.patrickgold.florisboard.ime.clipboard
 
 import android.content.ContentUris
+import android.content.Context
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.media.ThumbnailUtils
@@ -60,6 +62,7 @@ import androidx.compose.material.icons.automirrored.outlined.Backspace
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.FilterListOff
 import androidx.compose.material.icons.filled.Image
@@ -67,6 +70,7 @@ import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.ToggleOff
@@ -113,6 +117,7 @@ import dev.patrickgold.florisboard.ime.media.KeyboardLikeButton
 import dev.patrickgold.florisboard.ime.smartbar.AnimationDuration
 import dev.patrickgold.florisboard.ime.smartbar.VerticalEnterTransition
 import dev.patrickgold.florisboard.ime.smartbar.VerticalExitTransition
+import dev.patrickgold.florisboard.ime.text.editor.TextEditorState
 import dev.patrickgold.florisboard.ime.text.keyboard.TextKeyData
 import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
 import dev.patrickgold.florisboard.keyboardManager
@@ -408,7 +413,9 @@ fun ClipboardInputLayout(
                             selectedItemIds.add(item.id)
                         }
                     } else {
-                        enterSelectionMode(item)
+                        // A long click opens the actions of the item, so that the item can be pinned, edited,
+                        // shared or deleted.
+                        popupItem = item
                     }
                 },
                 onClick = {
@@ -726,7 +733,10 @@ fun ClipboardInputLayout(
                         }
                     }
                     SnyggColumn(modifier = Modifier.weight(0.5f)) {
-                        SnyggColumn(FlorisImeUi.ClipboardItemActions.elementName) {
+                        SnyggColumn(
+                            elementName = FlorisImeUi.ClipboardItemActions.elementName,
+                            modifier = Modifier.florisVerticalScroll(),
+                        ) {
                             PopupAction(
                                 icon = Icons.Outlined.PushPin,
                                 text = stringRes(if (popupItem!!.isPinned) {
@@ -741,6 +751,27 @@ fun ClipboardInputLayout(
                                     clipboardManager.pinClip(popupItem!!)
                                 }
                                 popupItem = null
+                            }
+                            PopupAction(
+                                icon = Icons.Default.Edit,
+                                text = stringRes(R.string.clip__edit_item),
+                            ) {
+                                val item = popupItem!!
+                                popupItem = null
+                                if (item.type == ItemType.TEXT) {
+                                    TextEditorState.openForItem(item, item.text.orEmpty())
+                                    // The text editor is shown above the keys of the keyboard, therefore the
+                                    // clipboard panel is closed.
+                                    keyboardManager.activeState.imeUiMode = ImeUiMode.TEXT
+                                }
+                            }
+                            PopupAction(
+                                icon = Icons.Default.Share,
+                                text = stringRes(R.string.clip__share_item),
+                            ) {
+                                val item = popupItem!!
+                                popupItem = null
+                                shareClipboardItem(context, item)
                             }
                             PopupAction(
                                 icon = Icons.Default.Delete,
@@ -1064,4 +1095,23 @@ private fun PopupAction(
             text = text,
         )
     }
+}
+
+/**
+ * Shares the given clipboard [item] with another app.
+ *
+ * @param context The context which is used to start the share intent.
+ * @param item The item of the clipboard history which is shared.
+ */
+private fun shareClipboardItem(context: Context, item: ClipboardItem) {
+    val text = item.stringRepresentation()
+    if (text.isBlank()) return
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    val chooser = Intent.createChooser(intent, null).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    runCatching { context.startActivity(chooser) }
 }
