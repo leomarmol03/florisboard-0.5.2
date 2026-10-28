@@ -219,6 +219,7 @@ fun SubtypeEditorScreen(id: Long?) = FlorisScreen {
     //var secondaryLocales by subtypeEditor.secondaryLocales
     var composer by subtypeEditor.composer
     var currencySet by subtypeEditor.currencySet
+    var punctuationRule by subtypeEditor.punctuationRule
     var popupMapping by subtypeEditor.popupMapping
     var layoutMap by subtypeEditor.layoutMap
     var nlpProviders by subtypeEditor.nlpProviders
