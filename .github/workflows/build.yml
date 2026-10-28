@@ -70,7 +70,12 @@ jobs:
           {
             echo "### Gradle build errors"
             echo '```'
-            grep -aE "^e: |error:|FAILURE:|What went wrong|> Task .* FAILED|Caused by|\.kt:[0-9]+:[0-9]+" gradle-build.log | head -n 400 || true
+            grep -aE "^e: |error:|FAILURE:|What went wrong|> Task .* FAILED|Caused by|Could not|\.kt:[0-9]+:[0-9]+" gradle-build.log | head -n 200 || true
+            echo '```'
+            echo ""
+            echo "### Last 150 lines of the build log"
+            echo '```'
+            tail -n 150 gradle-build.log
             echo '```'
           } > gradle-errors.md
           gh api "repos/${GITHUB_REPOSITORY}/check-runs" \
