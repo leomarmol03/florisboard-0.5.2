@@ -104,7 +104,10 @@ fun TypingScreen() = FlorisScreen {
             )
         }
 
-        val enabledLanguagesValue by prefs.suggestion.enabledLanguages.observeAsState()
+        // The preference is held in a local variable, because it is not possible to access the preferences of the
+        // screen from within the outlined box below.
+        val enabledLanguagesPref = prefs.suggestion.enabledLanguages
+        val enabledLanguagesValue by enabledLanguagesPref.observeAsState()
         FlorisOutlinedBox(
             modifier = Modifier.defaultFlorisOutlinedBox(),
             title = stringRes(R.string.pref__suggestion__enabled_languages__label),
@@ -123,7 +126,7 @@ fun TypingScreen() = FlorisScreen {
                             } else {
                                 enabledLanguages + dictionary.language
                             }
-                            prefs.suggestion.enabledLanguages.set(newLanguages.joinToString(","))
+                            enabledLanguagesPref.set(newLanguages.joinToString(","))
                         }
                     },
                 )
