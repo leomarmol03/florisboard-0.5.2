@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The spanish translations of the strings which were added by this fork.
+
+    The translations of the upstream strings are managed by Crowdin and must not be touched by pull requests,
+    therefore the translations of the fork specific strings live in this separate file.
+-->
+<resources>
+    <string name="snygg__rule_element__clipboard_tab_row">Fila de pestañas del portapapeles</string>
+    <string name="snygg__rule_element__clipboard_tab">Pestaña del portapapeles</string>
+    <string name="snygg__rule_element__clipboard_tab_text">Texto de la pestaña del portapapeles</string>
+    <string name="snygg__rule_element__clipboard_item_delete_background">Fondo de eliminación de ítem del portapapeles</string>
+    <string name="snygg__rule_element__clipboard_item_delete_icon">Icono de eliminación de ítem del portapapeles</string>
+
+    <string name="clipboard__tab_pinned">Anclados</string>
+    <string name="clipboard__tab_recent">Recientes</string>
+    <string name="clipboard__swipe_to_delete__hint">Desliza un elemento hacia un lado para borrarlo</string>
+</resources>
