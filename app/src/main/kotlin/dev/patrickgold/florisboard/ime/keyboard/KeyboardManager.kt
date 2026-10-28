@@ -49,6 +49,8 @@ import dev.patrickgold.florisboard.ime.nlp.PunctuationRule
 import dev.patrickgold.florisboard.ime.nlp.SuggestionCandidate
 import dev.patrickgold.florisboard.ime.nlp.WordSuggestionCandidate
 import dev.patrickgold.florisboard.ime.nlp.latin.LatinDictionaries
+import dev.patrickgold.florisboard.ime.text.editor.TextEditorState
+import dev.patrickgold.florisboard.ime.translate.TranslationManager
 import dev.patrickgold.florisboard.ime.onehanded.OneHandedMode
 import dev.patrickgold.florisboard.ime.popup.PopupMappingComponent
 import dev.patrickgold.florisboard.ime.text.composing.Composer
@@ -737,6 +739,68 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
         activeState.isCharHalfWidth = true
     }
 
+    /**
+     * Handles a [KeyCode.IME_UI_MODE_TRANSLATE] event, which opens the panel of the translator.
+     */
+    private fun handleTranslate() {
+        val content = editorInstance.activeContent
+        val selectedText = runCatching { content.selectedText }.getOrNull().orEmpty()
+        val composingText = runCatching { content.composingText }.getOrNull().orEmpty()
+        val text = selectedText.ifBlank { composingText }
+        TranslationManager.open(text)
+        activeState.imeUiMode = ImeUiMode.TRANSLATE
+    }
+
+    /**
+     * Handles a [KeyCode.TEXT_EDITOR] event, which opens the text editor of the keyboard.
+     */
+    private fun handleTextEditor() {
+        TextEditorState.openFree()
+    }
+
+    /**
+     * Uses the given [data] to edit the text of the text editor.
+     *
+     * @param data The key which was pressed by the user.
+     *
+     * @return True if the key was used for the text editor, false otherwise.
+     */
+    private fun handleTextEditorKey(data: KeyData): Boolean {
+        when (data.code) {
+            KeyCode.DELETE -> {
+                TextEditorState.deleteBackward()
+                return true
+            }
+            KeyCode.FORWARD_DELETE -> {
+                TextEditorState.deleteForward()
+                return true
+            }
+            KeyCode.SPACE -> {
+                TextEditorState.insert(" ")
+                return true
+            }
+            KeyCode.ENTER -> {
+                TextEditorState.insert("\n")
+                return true
+            }
+            KeyCode.ARROW_LEFT -> {
+                TextEditorState.moveCursor(-1)
+                return true
+            }
+            KeyCode.ARROW_RIGHT -> {
+                TextEditorState.moveCursor(1)
+                return true
+            }
+            else -> {
+                if (data.type == KeyType.CHARACTER || data.type == KeyType.NUMERIC) {
+                    TextEditorState.insert(data.asString(isForDisplay = false))
+                    return true
+                }
+                return false
+            }
+        }
+    }
+
     override fun onInputKeyDown(data: KeyData) {
         when (data.code) {
             KeyCode.ARROW_DOWN,
@@ -754,6 +818,11 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
     }
 
     override fun onInputKeyUp(data: KeyData) = activeState.batchEdit {
+        // If the text editor is shown, the keys are used to edit the text of the editor instead of the input field
+        // of the user.
+        if (TextEditorState.isVisible && handleTextEditorKey(data)) {
+            return@batchEdit
+        }
         when (data.code) {
             KeyCode.ARROW_DOWN,
             KeyCode.ARROW_LEFT,
@@ -805,6 +874,8 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             KeyCode.IME_UI_MODE_TEXT -> activeState.imeUiMode = ImeUiMode.TEXT
             KeyCode.IME_UI_MODE_MEDIA -> activeState.imeUiMode = ImeUiMode.MEDIA
             KeyCode.IME_UI_MODE_CLIPBOARD -> activeState.imeUiMode = ImeUiMode.CLIPBOARD
+            KeyCode.IME_UI_MODE_TRANSLATE -> handleTranslate()
+            KeyCode.TEXT_EDITOR -> handleTextEditor()
             KeyCode.VOICE_INPUT -> FlorisImeService.switchToVoiceInputMethod()
             KeyCode.KANA_SWITCHER -> handleKanaSwitch()
             KeyCode.KANA_HIRA -> handleKanaHira()

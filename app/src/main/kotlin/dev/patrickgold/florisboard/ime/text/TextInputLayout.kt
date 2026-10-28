@@ -36,6 +36,8 @@ import dev.patrickgold.florisboard.ime.smartbar.IncognitoDisplayMode
 import dev.patrickgold.florisboard.ime.smartbar.InlineSuggestionsStyleCache
 import dev.patrickgold.florisboard.ime.smartbar.Smartbar
 import dev.patrickgold.florisboard.ime.smartbar.quickaction.QuickActionsOverflowPanel
+import dev.patrickgold.florisboard.ime.text.editor.TextEditorPanel
+import dev.patrickgold.florisboard.ime.text.editor.TextEditorState
 import dev.patrickgold.florisboard.ime.text.keyboard.TextKeyboardLayout
 import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
 import dev.patrickgold.florisboard.keyboardManager
@@ -62,7 +64,11 @@ fun TextInputLayout(
                 .fillMaxWidth()
                 .wrapContentHeight(),
         ) {
-            Smartbar()
+            if (TextEditorState.isVisible) {
+                TextEditorPanel()
+            } else {
+                Smartbar()
+            }
             if (state.isActionsOverflowVisible) {
                 QuickActionsOverflowPanel()
             } else {

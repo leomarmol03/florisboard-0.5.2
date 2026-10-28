@@ -145,6 +145,14 @@ enum class FlorisImeUi(val elementName: String, val resId: Int?) {
         elementName = "clipboard-item-action-text",
         resId = R.string.snygg__rule_element__clipboard_item_action_text,
     ),
+    TextEditorPanel(
+        elementName = "text-editor-panel",
+        resId = R.string.snygg__rule_element__text_editor_panel,
+    ),
+    TranslatePanel(
+        elementName = "translate-panel",
+        resId = R.string.snygg__rule_element__translate_panel,
+    ),
     ClipboardClearAllDialog(
         elementName = "clipboard-clear-all-dialog",
         resId = R.string.snygg__rule_element__clipboard_clear_all_dialog,
