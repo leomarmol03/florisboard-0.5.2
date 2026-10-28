@@ -20,6 +20,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import dev.patrickgold.florisboard.lib.devtools.flogError
+import java.io.DataInputStream
 import java.io.File
 import org.florisboard.lib.kotlin.io.subDir
 
@@ -36,6 +37,21 @@ object CustomFontStorage {
 
     /** The file name which is used when no font is selected. */
     const val NO_FONT = ""
+
+    /** The magic bytes of a ttf file. */
+    private val TTF_MAGIC = byteArrayOf(0x00, 0x01, 0x00, 0x00)
+
+    /** The magic bytes of an otf file. */
+    private val OTF_MAGIC = byteArrayOf(0x4F, 0x54, 0x54, 0x4F)
+
+    /** The magic bytes of a font collection. */
+    private val TTC_MAGIC = byteArrayOf(0x74, 0x74, 0x63, 0x66)
+
+    /** The tables which every usable font has to provide. */
+    private val REQUIRED_TABLES = setOf("cmap", "head", "hhea", "hmtx", "maxp", "name")
+
+    /** The tables which hold the outlines of a font. */
+    private val OUTLINE_TABLES = setOf("glyf", "CFF ", "CFF2")
 
     /** The mime types which are used to select a font file from the storage of the device. */
     val FONT_MIME_TYPES = arrayOf(
@@ -96,22 +112,40 @@ object CustomFontStorage {
     /**
      * Checks whether the given [file] is a valid ttf, otf or ttc font file.
      *
-     * This is a simple sanity check of the sfnt header, as the android system is not able to handle invalid font
-     * files and would crash the app while rendering text with them.
+     * The header of the font is checked and, for a ttf or otf file, the table directory is validated as well. The
+     * android system is not able to handle invalid font files and would crash the app while rendering text with
+     * them, therefore only files which look like a usable font are accepted here.
      */
     fun isFontFile(file: File): Boolean {
         return runCatching {
-            val header = ByteArray(4)
-            file.inputStream().use { stream ->
-                if (stream.read(header) != 4) return false
+            DataInputStream(file.inputStream().buffered()).use { stream ->
+                val header = ByteArray(12)
+                stream.readFully(header)
+                val magic = header.copyOfRange(0, 4)
+                when {
+                    // 0x00010000 is the sfnt version of a ttf file and 'OTTO' is the magic of an otf file. Both of
+                    // them use the same table directory layout.
+                    magic.contentEquals(TTF_MAGIC) || magic.contentEquals(OTF_MAGIC) -> {
+                        val numTables = readUInt16(header, 4)
+                        if (numTables <= 0 || numTables > 512) return@use false
+                        val records = ByteArray(numTables * 16)
+                        stream.readFully(records)
+                        val tags = HashSet<String>(numTables)
+                        for (index in 0 until numTables) {
+                            tags.add(String(records, index * 16, 4, Charsets.ISO_8859_1))
+                        }
+                        REQUIRED_TABLES.all { it in tags } && tags.any { it in OUTLINE_TABLES }
+                    }
+                    // 'ttcf' is the magic of a font collection, which holds multiple fonts in a single file.
+                    magic.contentEquals(TTC_MAGIC) -> true
+                    else -> false
+                }
             }
-            val tag = header.map { it.toInt() and 0xFF }
-            // 0x00010000 is the sfnt version of a ttf file, 'OTTO' is the magic of an otf file and 'ttcf' is
-            // the magic of a font collection.
-            (tag[0] == 0x00 && tag[1] == 0x01 && tag[2] == 0x00 && tag[3] == 0x00) ||
-                (tag[0] == 0x4F && tag[1] == 0x54 && tag[2] == 0x54 && tag[3] == 0x4F) ||
-                (tag[0] == 0x74 && tag[1] == 0x74 && tag[2] == 0x63 && tag[3] == 0x66)
         }.getOrDefault(false)
+    }
+
+    private fun readUInt16(data: ByteArray, offset: Int): Int {
+        return ((data[offset].toInt() and 0xFF) shl 8) or (data[offset + 1].toInt() and 0xFF)
     }
 
     private fun queryDisplayName(context: Context, uri: Uri): String? {
