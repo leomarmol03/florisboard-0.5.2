@@ -301,11 +301,11 @@ val FlorisImeThemeBaseStyle = SnyggStylesheet.v2 {
     }
     FlorisImeUi.ClipboardItemDeleteBackground.elementName {
         background = rgbaColor(0, 0, 0, 0f)
-        foreground = rgbaColor(220, 38, 38, 255)
+        foreground = rgbaColor(220, 38, 38)
         shape = `var`("--shape-variant")
     }
     FlorisImeUi.ClipboardItemDeleteIcon.elementName {
-        foreground = rgbaColor(220, 38, 38, 255)
+        foreground = rgbaColor(220, 38, 38)
         fontSize = fontSize(20.sp)
     }
     FlorisImeUi.ClipboardContent.elementName {

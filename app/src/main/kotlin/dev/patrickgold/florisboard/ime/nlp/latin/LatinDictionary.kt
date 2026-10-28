@@ -252,7 +252,7 @@ class LatinDictionary private constructor(
             val decomposed = Normalizer.normalize(lowercased, Normalizer.Form.NFD)
             return buildString(lowercased.length) {
                 for (char in decomposed) {
-                    if (Character.getType(char) != Character.NON_SPACING_MARK) {
+                    if (Character.getType(char) != Character.NON_SPACING_MARK.toInt()) {
                         append(char)
                     }
                 }
