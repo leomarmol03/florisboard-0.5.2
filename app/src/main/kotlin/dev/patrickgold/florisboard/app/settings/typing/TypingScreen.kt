@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.SpaceBar
@@ -29,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
@@ -39,6 +42,7 @@ import dev.patrickgold.florisboard.app.Routes
 import dev.patrickgold.florisboard.app.enumDisplayEntriesOf
 import dev.patrickgold.florisboard.ime.keyboard.IncognitoMode
 import dev.patrickgold.florisboard.ime.nlp.SpellingLanguageMode
+import dev.patrickgold.florisboard.ime.nlp.latin.LatinDictionaries
 import dev.patrickgold.florisboard.lib.compose.FlorisHyperlinkText
 import dev.patrickgold.florisboard.lib.compose.FlorisScreen
 import dev.patrickgold.jetpref.datastore.model.observeAsState
@@ -47,8 +51,11 @@ import dev.patrickgold.jetpref.datastore.ui.ListPreference
 import dev.patrickgold.jetpref.datastore.ui.Preference
 import dev.patrickgold.jetpref.datastore.ui.PreferenceGroup
 import dev.patrickgold.jetpref.datastore.ui.SwitchPreference
+import kotlinx.coroutines.launch
 import org.florisboard.lib.android.AndroidVersion
+import org.florisboard.lib.compose.FlorisOutlinedBox
 import org.florisboard.lib.compose.FlorisWarningCard
+import org.florisboard.lib.compose.defaultFlorisOutlinedBox
 import org.florisboard.lib.compose.stringRes
 
 @OptIn(ExperimentalJetPrefDatastoreUi::class)
@@ -58,6 +65,7 @@ fun TypingScreen() = FlorisScreen {
     previewFieldVisible = true
 
     val navController = LocalNavController.current
+    val scope = rememberCoroutineScope()
 
     content {
         // This card is temporary and is therefore not using a string resource (not so temporary as we thought...)
@@ -65,8 +73,8 @@ fun TypingScreen() = FlorisScreen {
             modifier = Modifier.padding(8.dp),
             text = """
                 Word suggestions and spell checking are based on the bundled word lists, which are currently
-                available for english and spanish. All preferences in the "Corrections" group are properly
-                implemented though.
+                available for english and spanish. The languages which are used for the suggestions can be
+                selected below.
             """.trimIndent().replace('\n', ' '),
         )
 
@@ -96,11 +104,46 @@ fun TypingScreen() = FlorisScreen {
             )
         }
 
+        // The preference is held in a local variable, because it is not possible to access the preferences of the
+        // screen from within the outlined box below.
+        val enabledLanguagesPref = prefs.suggestion.enabledLanguages
+        val enabledLanguagesValue by enabledLanguagesPref.observeAsState()
+        FlorisOutlinedBox(
+            modifier = Modifier.defaultFlorisOutlinedBox(),
+            title = stringRes(R.string.pref__suggestion__enabled_languages__label),
+            subtitle = stringRes(R.string.pref__suggestion__enabled_languages__summary),
+        ) {
+            val enabledLanguages = LatinDictionaries.parseLanguages(enabledLanguagesValue)
+            for (dictionary in LatinDictionaries.AvailableDictionaries) {
+                val isEnabled = dictionary.language in enabledLanguages
+                Preference(
+                    icon = if (isEnabled) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+                    title = stringRes(dictionary.labelRes),
+                    onClick = {
+                        scope.launch {
+                            val newLanguages = if (isEnabled) {
+                                enabledLanguages - dictionary.language
+                            } else {
+                                enabledLanguages + dictionary.language
+                            }
+                            enabledLanguagesPref.set(newLanguages.joinToString(","))
+                        }
+                    },
+                )
+            }
+        }
+
         PreferenceGroup(title = stringRes(R.string.pref__correction__title)) {
             SwitchPreference(
                 prefs.correction.autoCapitalization,
                 title = stringRes(R.string.pref__correction__auto_capitalization__label),
                 summary = stringRes(R.string.pref__correction__auto_capitalization__summary),
+            )
+            SwitchPreference(
+                prefs.correction.autoCorrectionEnabled,
+                title = stringRes(R.string.pref__correction__auto_correction_enabled__label),
+                summary = stringRes(R.string.pref__correction__auto_correction_enabled__summary),
+                enabledIf = { prefs.suggestion.enabled isEqualTo true },
             )
             val isAutoSpacePunctuationEnabled by prefs.correction.autoSpacePunctuation.observeAsState()
             SwitchPreference(

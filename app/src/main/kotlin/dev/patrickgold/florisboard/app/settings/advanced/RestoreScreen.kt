@@ -148,6 +148,22 @@ fun RestoreScreen() = FlorisScreen {
     suspend fun performRestore() {
         val workspace = restoreWorkspace!!
         val shouldReset = importStrategy == ImportStrategy.Erase
+        val workspaceFilesDir = workspace.outputDir.subDir("files")
+        // The custom fonts are restored before the preferences, because the preferences hold the name of the
+        // selected font. If the preferences were restored first, the theme of the keyboard would be compiled
+        // without the font, as the font file would not be present yet.
+        if (restoreFilesSelector.customFonts) {
+            val srcDir = workspaceFilesDir.subDir(CustomFontStorage.FONT_DIR_NAME)
+            val dstDir = context.filesDir.subDir(CustomFontStorage.FONT_DIR_NAME)
+            if (shouldReset) {
+                dstDir.deleteContentsRecursively()
+            }
+            if (srcDir.exists()) {
+                srcDir.copyRecursively(dstDir, overwrite = true)
+            }
+            // The theme of the keyboard has to be recompiled, as the font files have changed.
+            CustomFontStorage.notifyChanged()
+        }
         if (restoreFilesSelector.jetprefDatastore) {
             val file = workspace.outputDir
                 .subDir(AndroidAppDataStorage.JETPREF_DIR_NAME)
@@ -157,7 +173,6 @@ fun RestoreScreen() = FlorisScreen {
                 FlorisPreferenceStore.import(importStrategy, fileBasedStorage).getOrThrow()
             }
         }
-        val workspaceFilesDir = workspace.outputDir.subDir("files")
         if (restoreFilesSelector.imeKeyboard) {
             val srcDir = workspaceFilesDir.subDir(ExtensionManager.IME_KEYBOARD_PATH)
             val dstDir = context.filesDir.subDir(ExtensionManager.IME_KEYBOARD_PATH)
@@ -179,14 +194,6 @@ fun RestoreScreen() = FlorisScreen {
             }
         }
         if (restoreFilesSelector.customFonts) {
-            val srcDir = workspaceFilesDir.subDir(CustomFontStorage.FONT_DIR_NAME)
-            val dstDir = context.filesDir.subDir(CustomFontStorage.FONT_DIR_NAME)
-            if (shouldReset) {
-                dstDir.deleteContentsRecursively()
-            }
-            if (srcDir.exists()) {
-                srcDir.copyRecursively(dstDir, overwrite = true)
-            }
             // If the restored preferences point to a font which is not present, the selection is reset, so that
             // the default system font is used instead of a broken font reference.
             val prefs by FlorisPreferenceStore

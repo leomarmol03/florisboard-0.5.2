@@ -28,6 +28,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
+import dev.patrickgold.florisboard.app.font.CustomFontStorage
 import dev.patrickgold.florisboard.keyboardManager
 import dev.patrickgold.florisboard.themeManager
 import dev.patrickgold.jetpref.datastore.model.observeAsState
@@ -52,12 +53,15 @@ fun FlorisImeTheme(content: @Composable () -> Unit) {
     val prefs by FlorisPreferenceStore
     val accentColor by prefs.theme.accentColor.observeAsState()
     val customFontName by prefs.other.customFont.observeAsState()
+    // The revision of the fonts changes whenever a font is added, removed or restored. It is used as a trigger
+    // for the recompilation of the theme, as the keyboard is not able to observe the font files directly.
+    val customFontRevision by CustomFontStorage.revision.collectAsState()
 
     val activeThemeInfo by themeManager.activeThemeInfo.collectAsState()
     val activeConfig = remember(activeThemeInfo) { activeThemeInfo.config }
     val activeStyle = remember(activeThemeInfo) { activeThemeInfo.stylesheet }
 
-    val assetResolver = remember(activeThemeInfo, customFontName) {
+    val assetResolver = remember(activeThemeInfo, customFontName, customFontRevision) {
         FlorisAssetResolver(context, activeThemeInfo, customFontName)
     }
     val snyggTheme = rememberSnyggTheme(activeStyle, assetResolver)

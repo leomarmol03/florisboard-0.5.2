@@ -70,7 +70,6 @@ import dev.patrickgold.florisboard.ime.core.SubtypeNlpProviderMap
 import dev.patrickgold.florisboard.ime.core.SubtypePreset
 import dev.patrickgold.florisboard.ime.keyboard.LayoutArrangementComponent
 import dev.patrickgold.florisboard.ime.keyboard.LayoutType
-import dev.patrickgold.florisboard.ime.keyboard.extCorePopupMapping
 import dev.patrickgold.florisboard.ime.nlp.han.HanShapeBasedLanguageProvider
 import dev.patrickgold.florisboard.ime.nlp.latin.LatinLanguageProvider
 import dev.patrickgold.florisboard.keyboardManager
@@ -142,8 +141,17 @@ private class SubtypeEditorState(init: Subtype?) {
     val popupMapping: MutableState<ExtensionComponentName> = mutableStateOf(init?.popupMapping ?: SelectComponentName)
     val layoutMap: MutableState<SubtypeLayoutMap> = mutableStateOf(init?.layoutMap ?: SelectLayoutMap)
 
-    fun applySubtype(subtype: Subtype) {
-        id.value = subtype.id
+    /**
+     * Applies the values of the given [subtype] to this editor state.
+     *
+     * @param subtype The subtype which holds the new values.
+     * @param keepId If true, the id of the edited subtype is kept. This is necessary if the values of an existing
+     *  subtype are changed, as the id is used to identify the subtype which has to be modified.
+     */
+    fun applySubtype(subtype: Subtype, keepId: Boolean = false) {
+        if (!keepId) {
+            id.value = subtype.id
+        }
         primaryLocale.value = subtype.primaryLocale
         secondaryLocales.value = subtype.secondaryLocales
         composer.value = subtype.composer
@@ -211,6 +219,7 @@ fun SubtypeEditorScreen(id: Long?) = FlorisScreen {
     //var secondaryLocales by subtypeEditor.secondaryLocales
     var composer by subtypeEditor.composer
     var currencySet by subtypeEditor.currencySet
+    var punctuationRule by subtypeEditor.punctuationRule
     var popupMapping by subtypeEditor.popupMapping
     var layoutMap by subtypeEditor.layoutMap
     var nlpProviders by subtypeEditor.nlpProviders
@@ -225,9 +234,25 @@ fun SubtypeEditorScreen(id: Long?) = FlorisScreen {
     DisposableEffect(selectLocaleScreenResult, lifecycleOwner) {
         val observer = Observer<String> { languageTag ->
             val locale = FlorisLocale.fromTag(languageTag)
-            primaryLocale = locale
+            // The remaining fields of the subtype are filled with the values of the matching subtype preset, so
+            // that the user does not have to select the composer, the currency set and every layout by hand.
             val preset = subtypeManager.getSubtypePresetForLocale(locale)
-            popupMapping = preset?.popupMapping ?: extCorePopupMapping("default")
+            if (preset != null) {
+                subtypeEditor.applySubtype(preset.toSubtype(), keepId = id != null)
+            } else {
+                // There is no preset for this locale, therefore the defaults are used, which are valid for every
+                // language.
+                val default = Subtype.DEFAULT
+                nlpProviders = default.nlpProviders
+                composer = default.composer
+                currencySet = default.currencySet
+                punctuationRule = default.punctuationRule
+                popupMapping = default.popupMapping
+                layoutMap = default.layoutMap
+            }
+            // The locale which was selected by the user always wins, even if the preset is only available for
+            // another locale of the same language.
+            primaryLocale = locale
         }
         selectLocaleScreenResult?.observe(lifecycleOwner, observer)
         onDispose { selectLocaleScreenResult?.removeObserver(observer) }
@@ -277,10 +302,14 @@ fun SubtypeEditorScreen(id: Long?) = FlorisScreen {
             ButtonBarButton(text = stringRes(R.string.action__save)) {
                 subtypeEditor.toSubtype().onSuccess { subtype ->
                     if (id == null) {
-                        if (!subtypeManager.addSubtype(subtype)) {
+                        val newSubtypeId = subtypeManager.addSubtype(subtype)
+                        if (newSubtypeId == null) {
                             errorDialogStrId = R.string.settings__localization__subtype_error_already_exists
                             return@ButtonBarButton
                         }
+                        // The new subtype is activated right away, so that the user is able to see the new
+                        // language and layout in the keyboard without any further action.
+                        subtypeManager.switchToSubtypeById(newSubtypeId)
                     } else {
                         subtypeManager.modifySubtypeWithSameId(subtype)
                     }
