@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        Material You: On Android 12 and above the accent colors of the app are taken from the dynamic color
+        palette of the system. The colors themselves are defined in the values-v31/colors.xml file, so that this
+        theme only needs to reference them.
+    -->
+    <style name="FlorisAppTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/colorPrimary</item>
+        <item name="android:colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="android:colorAccent">@color/colorAccent</item>
+
+        <!-- IMPORTANT: the following 2 colors MUST be references and not inline colors, or older
+             versions of Android will not set the window background and thus causing weird
+             rendering glitches!! -->
+        <item name="android:windowBackground">@color/florisApp_windowBackground</item>
+        <item name="android:colorBackground">@color/florisApp_windowBackground</item>
+
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
+    </style>
+
+    <!--
+        The theme of the input method service. The accent color is used for the cursor and the selection handles
+        of the preview field, so it should follow the dynamic color palette as well.
+    -->
+    <style name="FlorisImeTheme" parent="android:Theme.Material.InputMethod">
+        <!-- Need this to prevent Xiaomi devices from messing with our beautiful UI -->
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
+        <!-- FFS -->
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:colorAccent">@color/colorAccent</item>
+    </style>
+
+</resources>

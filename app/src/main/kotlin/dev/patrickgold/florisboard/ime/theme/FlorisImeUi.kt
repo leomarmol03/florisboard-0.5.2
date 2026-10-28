@@ -65,6 +65,18 @@ enum class FlorisImeUi(val elementName: String, val resId: Int?) {
         elementName = "clipboard-subheader",
         resId = R.string.snygg__rule_element__clipboard_subheader,
     ),
+    ClipboardTabRow(
+        elementName = "clipboard-tab-row",
+        resId = R.string.snygg__rule_element__clipboard_tab_row,
+    ),
+    ClipboardTab(
+        elementName = "clipboard-tab",
+        resId = R.string.snygg__rule_element__clipboard_tab,
+    ),
+    ClipboardTabText(
+        elementName = "clipboard-tab-text",
+        resId = R.string.snygg__rule_element__clipboard_tab_text,
+    ),
     ClipboardContent(
         elementName = "clipboard-content",
         resId = R.string.snygg__rule_element__clipboard_content,
@@ -92,6 +104,14 @@ enum class FlorisImeUi(val elementName: String, val resId: Int?) {
     ClipboardItem(
         elementName = "clipboard-item",
         resId = R.string.snygg__rule_element__clipboard_item,
+    ),
+    ClipboardItemDeleteBackground(
+        elementName = "clipboard-item-delete-background",
+        resId = R.string.snygg__rule_element__clipboard_item_delete_background,
+    ),
+    ClipboardItemDeleteIcon(
+        elementName = "clipboard-item-delete-icon",
+        resId = R.string.snygg__rule_element__clipboard_item_delete_icon,
     ),
     ClipboardItemDescription(
         elementName = "clipboard-item-description",

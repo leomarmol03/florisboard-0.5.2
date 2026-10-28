@@ -1,0 +1,11 @@
+Figtree (bundled as the "Google Sans" keyboard font)
+=====================================================
+
+The font which is bundled with this app as `res/font/google_sans.ttf` is
+"Figtree" by The Figtree Project Authors (https://github.com/erikdkennedy/figtree).
+
+Figtree is licensed under the SIL Open Font License, Version 1.1, the full text of
+the license can be found in the file `figtree_ofl.txt` next to this notice.
+
+Figtree is used as a freely redistributable stand-in for "Google Sans", which is a
+proprietary font of Google LLC and therefore cannot be bundled with this app.

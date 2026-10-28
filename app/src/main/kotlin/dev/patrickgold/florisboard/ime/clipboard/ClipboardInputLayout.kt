@@ -24,19 +24,25 @@ import android.provider.MediaStore
 import android.util.Size
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
@@ -82,11 +88,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
@@ -109,6 +117,8 @@ import dev.patrickgold.jetpref.datastore.model.observeAsState
 import java.time.Instant
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import org.florisboard.lib.android.AndroidKeyguardManager
 import org.florisboard.lib.android.AndroidVersion
 import org.florisboard.lib.android.showShortToastSync
@@ -132,6 +142,15 @@ import org.florisboard.lib.snygg.ui.SnyggText
 private val ItemWidth = 200.dp
 private val DialogWidth = 240.dp
 
+/** The duration of the swipe animation in milliseconds. */
+private const val SwipeAnimationDuration = 180
+
+/** The factor of the item width which needs to be swiped to delete the item. */
+private const val DeleteSwipeThresholdFactor = 0.3f
+
+/** The pixel distance which is used to fade in the delete indicator. */
+private const val DeleteSwipeThresholdPx = 64f
+
 const val CLIPBOARD_HISTORY_NUM_GRID_COLUMNS_AUTO: Int = 0
 
 @Composable
@@ -147,6 +166,7 @@ fun ClipboardInputLayout(
 
     val deviceLocked = androidKeyguardManager.let { it.isDeviceLocked || it.isKeyguardLocked }
     val historyEnabled by prefs.clipboard.historyEnabled.observeAsState()
+    val activeTab by prefs.clipboard.activeTab.observeAsState()
 
     var isFilterRowShown by remember { mutableStateOf(false) }
     val activeFilterTypes = remember { mutableStateSetOf<ItemType>() }
@@ -159,6 +179,16 @@ fun ClipboardInputLayout(
             unfilteredHistory.all
                 .filter { activeFilterTypes.contains(it.type) }
                 .let { ClipboardHistory(it) }
+        }
+    }
+
+    /**
+     * The items which are currently visible, based on the active tab.
+     */
+    val visibleItems = remember(filteredHistory, activeTab) {
+        when (activeTab) {
+            ClipboardTab.PINNED -> filteredHistory.pinned
+            ClipboardTab.RECENT -> filteredHistory.recent + filteredHistory.other
         }
     }
 
@@ -175,7 +205,7 @@ fun ClipboardInputLayout(
         }
     }
 
-    LaunchedEffect(activeFilterTypes.toSet()) {
+    LaunchedEffect(activeFilterTypes.toSet(), activeTab) {
         gridState.scrollToItem(0)
     }
 
@@ -365,6 +395,43 @@ fun ClipboardInputLayout(
     }
 
     @Composable
+    fun ClipboardTabRow() {
+        SnyggRow(
+            elementName = FlorisImeUi.ClipboardTabRow.elementName,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(FlorisImeSizing.smartbarHeight),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            for (tab in ClipboardTab.entries) {
+                val isActive = tab == activeTab
+                val attributes = remember(isActive) {
+                    mapOf("state" to if (isActive) "active" else "inactive")
+                }
+                SnyggBox(
+                    elementName = FlorisImeUi.ClipboardTab.elementName,
+                    attributes = attributes,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .rippleClickable {
+                            if (!isActive) {
+                                scope.launch { prefs.clipboard.activeTab.set(tab) }
+                            }
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    SnyggText(
+                        elementName = FlorisImeUi.ClipboardTabText.elementName,
+                        attributes = attributes,
+                        text = stringRes(tab.labelRes),
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
     fun HistoryMainView() {
         SnyggBox(FlorisImeUi.ClipboardContent.elementName,
             modifier = Modifier.fillMaxSize(),
@@ -389,11 +456,17 @@ fun ClipboardInputLayout(
                         ClipCategoryTitle(text = stringRes(title))
                     }
                     items(items) { item ->
-                        ClipItemView(
-                            elementName = FlorisImeUi.ClipboardItem.elementName,
-                            item = item,
-                            contentScrollInsteadOfClip = false,
-                        )
+                        SwipeToDeleteItem(
+                            onDelete = {
+                                clipboardManager.deleteClip(item, onlyIfUnpinned = false)
+                            },
+                        ) {
+                            ClipItemView(
+                                elementName = FlorisImeUi.ClipboardItem.elementName,
+                                item = item,
+                                contentScrollInsteadOfClip = false,
+                            )
+                        }
                     }
                 }
             }
@@ -466,21 +539,25 @@ fun ClipboardInputLayout(
                         state = gridState,
                         columns = staggeredGridCells,
                     ) {
-                        clipboardItems(
-                            items = filteredHistory.pinned,
-                            key = "pinned-header",
-                            title = R.string.clipboard__group_pinned,
-                        )
-                        clipboardItems(
-                            items = filteredHistory.recent,
-                            key = "recent-header",
-                            title = R.string.clipboard__group_recent,
-                        )
-                        clipboardItems(
-                            items = filteredHistory.other,
-                            key = "other-header",
-                            title = R.string.clipboard__group_other,
-                        )
+                        when (activeTab) {
+                            ClipboardTab.PINNED -> clipboardItems(
+                                items = filteredHistory.pinned,
+                                key = "pinned-header",
+                                title = R.string.clipboard__group_pinned,
+                            )
+                            ClipboardTab.RECENT -> {
+                                clipboardItems(
+                                    items = filteredHistory.recent,
+                                    key = "recent-header",
+                                    title = R.string.clipboard__group_recent,
+                                )
+                                clipboardItems(
+                                    items = filteredHistory.other,
+                                    key = "other-header",
+                                    title = R.string.clipboard__group_other,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -593,7 +670,11 @@ fun ClipboardInputLayout(
                                 elementName = FlorisImeUi.ClipboardClearAllDialogButton.elementName,
                                 attributes = mapOf("action" to "yes"),
                                 onClick = {
-                                    clipboardManager.clearExactHistory(filteredHistory.unpinned)
+                                    val itemsToClear = when (activeTab) {
+                                        ClipboardTab.PINNED -> filteredHistory.pinned
+                                        ClipboardTab.RECENT -> filteredHistory.unpinned
+                                    }
+                                    clipboardManager.clearExactHistory(itemsToClear)
                                     context.showShortToastSync(R.string.clipboard__cleared_history)
                                     showClearAllHistory = false
                                 },
@@ -621,6 +702,13 @@ fun ClipboardInputLayout(
             SnyggText(
                 text = stringRes(R.string.clipboard__empty__message),
             )
+            if (filteredHistory.all.isNotEmpty()) {
+                // The current tab is empty, but there are items in the other tab. Hint the user at the
+                // swipe gesture, so that they know how to delete items.
+                SnyggText(
+                    text = stringRes(R.string.clipboard__swipe_to_delete__hint),
+                )
+            }
         }
     }
 
@@ -677,7 +765,12 @@ fun ClipboardInputLayout(
         } else {
             if (historyEnabled) {
                 if (filteredHistory.all.isNotEmpty() || !activeFilterTypes.isEmpty()) {
-                    HistoryMainView()
+                    ClipboardTabRow()
+                    if (visibleItems.isNotEmpty() || !activeFilterTypes.isEmpty()) {
+                        HistoryMainView()
+                    } else {
+                        HistoryEmptyView()
+                    }
                 } else {
                     HistoryEmptyView()
                 }
@@ -697,6 +790,81 @@ private fun ClipCategoryTitle(
         modifier = modifier.fillMaxWidth(),
         text = text.uppercase(),
     )
+}
+
+/**
+ * A composable which wraps its content and allows the user to delete it by swiping it to one side.
+ *
+ * If the swipe distance exceeds a certain threshold, the item is swiped out of the view and the [onDelete]
+ * callback is invoked. Otherwise, the item snaps back to its original position.
+ *
+ * @param onDelete The callback which is invoked if the item is swiped far enough to be deleted.
+ * @param modifier The modifier of this composable.
+ * @param content The content which should be swipeable.
+ */
+@Composable
+private fun SwipeToDeleteItem(
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val offsetX = remember { Animatable(0f) }
+
+    Box(modifier = modifier) {
+        // The background which becomes visible while the item is swiped away
+        SnyggBox(
+            elementName = FlorisImeUi.ClipboardItemDeleteBackground.elementName,
+            modifier = Modifier.matchParentSize(),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            SnyggIcon(
+                elementName = FlorisImeUi.ClipboardItemDeleteIcon.elementName,
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .graphicsLayer {
+                        alpha = (abs(offsetX.value) / DeleteSwipeThresholdPx).coerceIn(0f, 1f)
+                    },
+                imageVector = Icons.Default.Delete,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = {
+                            scope.launch { offsetX.stop() }
+                        },
+                        onDragCancel = {
+                            scope.launch { offsetX.animateTo(0f, tween(SwipeAnimationDuration)) }
+                        },
+                        onDragEnd = {
+                            scope.launch {
+                                if (abs(offsetX.value) >= size.width * DeleteSwipeThresholdFactor) {
+                                    val target = if (offsetX.value > 0) {
+                                        size.width.toFloat()
+                                    } else {
+                                        -size.width.toFloat()
+                                    }
+                                    offsetX.animateTo(target, tween(SwipeAnimationDuration))
+                                    onDelete()
+                                } else {
+                                    offsetX.animateTo(0f, tween(SwipeAnimationDuration))
+                                }
+                            }
+                        },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            scope.launch { offsetX.snapTo(offsetX.value + dragAmount) }
+                        },
+                    )
+                }
+        ) {
+            content()
+        }
+    }
 }
 
 @Composable

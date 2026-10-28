@@ -222,11 +222,16 @@
     <string name="snygg__rule_element__clipboard_header_button">Botón de encabezado del portapapeles</string>
     <string name="snygg__rule_element__clipboard_header_text">Texto de encabezado del portapapeles</string>
     <string name="snygg__rule_element__clipboard_subheader">Subencabezado del portapapeles</string>
+    <string name="snygg__rule_element__clipboard_tab_row">Fila de pestañas del portapapeles</string>
+    <string name="snygg__rule_element__clipboard_tab">Pestaña del portapapeles</string>
+    <string name="snygg__rule_element__clipboard_tab_text">Texto de la pestaña del portapapeles</string>
     <string name="snygg__rule_element__clipboard_content">Contenido del portapapeles</string>
     <string name="snygg__rule_element__clipboard_filter_row">Fila del filtro del portapapeles</string>
     <string name="snygg__rule_element__clipboard_filter_chip">Elemento de filtro de memoria intermedia</string>
     <string name="snygg__rule_element__clipboard_grid">Rejilla de portapapeles</string>
     <string name="snygg__rule_element__clipboard_item">Ítem de portapapeles</string>
+    <string name="snygg__rule_element__clipboard_item_delete_background">Fondo de eliminación de ítem del portapapeles</string>
+    <string name="snygg__rule_element__clipboard_item_delete_icon">Icono de eliminación de ítem del portapapeles</string>
     <string name="snygg__rule_element__clipboard_item_description">Descripción de objeto en el portapapeles</string>
     <string name="snygg__rule_element__clipboard_item_popup">Ítem de portapapeles emergente</string>
     <string name="snygg__rule_element__clipboard_item_timestamp">Fecha y hora del objeto en el portapapeles</string>
@@ -626,6 +631,9 @@
     <string name="clipboard__group_pinned">Anclado</string>
     <string name="clipboard__group_recent">Reciente</string>
     <string name="clipboard__group_other">Otro</string>
+    <string name="clipboard__tab_pinned">Anclados</string>
+    <string name="clipboard__tab_recent">Recientes</string>
+    <string name="clipboard__swipe_to_delete__hint">Desliza un elemento hacia un lado para borrarlo</string>
     <string name="clipboard__item_description_email">Correo electrónico</string>
     <string name="clipboard__item_description_url">URL</string>
     <string name="clipboard__item_description_phone">Teléfono</string>

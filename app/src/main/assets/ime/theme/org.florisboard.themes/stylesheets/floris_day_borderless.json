@@ -31,6 +31,19 @@
     "--shape-variant": "rounded-corner(12dp, 12dp, 12dp, 12dp)",
     "--shape-chip": "rounded-corner(50%, 50%, 50%, 50%)"
   },
+  "@font `Google Sans`": [
+    {
+      "src": "uri(`res:/font/google_sans`)",
+      "font-weight": "normal"
+    },
+    {
+      "src": "uri(`res:/font/google_sans`)",
+      "font-weight": "bold"
+    }
+  ],
+  "root": {
+    "font-family": "`Google Sans`"
+  },
 
   "window": {
     "background": "var(--background)",
@@ -261,6 +274,22 @@
     "font-size": "14sp",
     "margin": "6dp 10dp 6dp 6dp"
   },
+  "clipboard-tab-row": {
+    "foreground": "var(--on-background)",
+    "padding": "0dp 4dp"
+  },
+  "clipboard-tab": {
+    "foreground": "var(--on-background-disabled)",
+    "font-size": "14sp",
+    "shape": "var(--shape)"
+  },
+  "clipboard-tab[state=`active`]": {
+    "foreground": "var(--on-background)",
+    "font-weight": "bold"
+  },
+  "clipboard-tab-text": {
+    "font-size": "14sp"
+  },
   "clipboard-content": {
     "padding": "10dp 0dp"
   },
@@ -296,6 +325,13 @@
     "shadow-elevation": "2dp",
     "text-max-lines": "10",
     "text-overflow": "ellipsis"
+  },
+  "clipboard-item-delete-background": {
+    "background": "transparent",
+    "foreground": "rgb(220,38,38)"
+  },
+  "clipboard-item-delete-icon": {
+    "foreground": "rgb(220,38,38)"
   },
   "clipboard-item[type=`text`]": {
     "padding": "12dp 8dp"

@@ -18,27 +18,41 @@ package dev.patrickgold.florisboard.app.apptheme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
+import dev.patrickgold.florisboard.R
+
+/**
+ * The font family which is used throughout the settings app. This is the same font which is used for the keyboard
+ * UI, so that both look and feel the same.
+ *
+ * Note that the bundled "Google Sans" font is a freely redistributable stand-in for the proprietary font of Google.
+ */
+val GoogleSansFontFamily = FontFamily(
+    Font(R.font.google_sans, weight = FontWeight.Normal),
+    Font(R.font.google_sans, weight = FontWeight.Bold),
+)
+
+private fun TextStyle.withGoogleSans(): TextStyle = copy(fontFamily = GoogleSansFontFamily)
 
 // Set of Material typography styles to start with
-val Typography = Typography(
-    bodyLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp
+val Typography = Typography().run {
+    copy(
+        displayLarge = displayLarge.withGoogleSans(),
+        displayMedium = displayMedium.withGoogleSans(),
+        displaySmall = displaySmall.withGoogleSans(),
+        headlineLarge = headlineLarge.withGoogleSans(),
+        headlineMedium = headlineMedium.withGoogleSans(),
+        headlineSmall = headlineSmall.withGoogleSans(),
+        titleLarge = titleLarge.withGoogleSans(),
+        titleMedium = titleMedium.withGoogleSans(),
+        titleSmall = titleSmall.withGoogleSans(),
+        bodyLarge = bodyLarge.withGoogleSans(),
+        bodyMedium = bodyMedium.withGoogleSans(),
+        bodySmall = bodySmall.withGoogleSans(),
+        labelLarge = labelLarge.withGoogleSans(),
+        labelMedium = labelMedium.withGoogleSans(),
+        labelSmall = labelSmall.withGoogleSans(),
     )
-    /* Other default text styles to override
-    button = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.W500,
-        fontSize = 14.sp
-    ),
-    caption = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 12.sp
-    )
-    */
-)
+}
