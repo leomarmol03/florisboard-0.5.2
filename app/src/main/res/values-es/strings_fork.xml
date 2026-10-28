@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The spanish translations of the strings which were added by this fork.
+
+    The translations of the upstream strings are managed by Crowdin and must not be touched by pull requests,
+    therefore the translations of the fork specific strings live in this separate file.
+-->
+<resources>
+    <string name="snygg__rule_element__clipboard_tab_row">Fila de pestañas del portapapeles</string>
+    <string name="snygg__rule_element__clipboard_tab">Pestaña del portapapeles</string>
+    <string name="snygg__rule_element__clipboard_tab_text">Texto de la pestaña del portapapeles</string>
+    <string name="snygg__rule_element__clipboard_item_delete_background">Fondo de eliminación de ítem del portapapeles</string>
+    <string name="snygg__rule_element__clipboard_item_delete_icon">Icono de eliminación de ítem del portapapeles</string>
+    <string name="snygg__rule_element__clipboard_item_checkbox">Casilla de selección de ítem del portapapeles</string>
+
+    <string name="clipboard__tab_pinned">Anclados</string>
+    <string name="clipboard__tab_recent">Recientes</string>
+    <string name="clipboard__swipe_to_delete__hint">Desliza un elemento hacia un lado para borrarlo</string>
+    <string name="clipboard__selection__count">{count} seleccionados</string>
+    <string name="clipboard__selection__select_all">Seleccionar todo</string>
+    <string name="clipboard__selection__delete_selected">Eliminar los elementos seleccionados</string>
+
+    <string name="settings__custom_font__title">Fuente personalizada</string>
+    <string name="settings__custom_font__summary">Añade una fuente TTF u OTF desde el almacenamiento del dispositivo y úsala en todas partes</string>
+    <string name="settings__custom_font__add__label">Añadir una fuente</string>
+    <string name="settings__custom_font__add__summary">Elige un archivo .ttf u .otf del almacenamiento del dispositivo</string>
+    <string name="settings__custom_font__add__success">La fuente ha sido añadida</string>
+    <string name="settings__custom_font__add__failure">No se ha podido añadir la fuente</string>
+    <string name="settings__custom_font__available__title">Fuentes disponibles</string>
+    <string name="settings__custom_font__system_default">Predeterminada del sistema</string>
+    <string name="settings__custom_font__remove__label">Eliminar la fuente seleccionada</string>
+    <string name="settings__custom_font__remove__summary">Elimina el archivo de la fuente seleccionada del almacenamiento de la app</string>
+    <string name="settings__custom_font__remove__success">La fuente ha sido eliminada</string>
+
+    <string name="backup_and_restore__back_up__files_custom_fonts">Fuentes personalizadas</string>
+</resources>

@@ -27,7 +27,9 @@ jobs:
         id: fetch_changed_files
         if: steps.precheck.outputs.require_validation == 'true'
         run: |
-          pr_files="$(curl -sSf https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files?per_page=1000)" || exit 11
+          # The api is called with the token of the workflow, because the unauthenticated api of github is
+          # rate limited and would fail sporadically.
+          pr_files="$(curl -sSf -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files?per_page=1000")" || exit 11
           changed_files="$(jq -r '.[].filename' <<< "$pr_files")" || exit 12
           illegal_changes_list="$(grep -E '^app/src/main/res/values-.+/strings.xml$' <<< "$changed_files")" || true
           if [ -n "$illegal_changes_list" ]; then

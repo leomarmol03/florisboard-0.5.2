@@ -24,26 +24,33 @@ import dev.patrickgold.florisboard.ime.nlp.SpellingProvider
 import dev.patrickgold.florisboard.ime.nlp.SpellingResult
 import dev.patrickgold.florisboard.ime.nlp.SuggestionCandidate
 import dev.patrickgold.florisboard.ime.nlp.SuggestionProvider
+import dev.patrickgold.florisboard.ime.nlp.WordSuggestionCandidate
 import dev.patrickgold.florisboard.lib.devtools.flogDebug
+import dev.patrickgold.florisboard.lib.devtools.flogInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.builtins.MapSerializer
-import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.json.Json
-import org.florisboard.lib.android.readText
-import org.florisboard.lib.kotlin.guardedByLock
 
+/**
+ * The language provider for all languages which are based on the latin alphabet.
+ *
+ * Word suggestions and spelling corrections are provided by the word lists which are bundled with the app. Currently,
+ * word lists for the english and the spanish language are available. For all other languages the english word list is
+ * used as a fallback, so that the glide typing feature keeps working as before.
+ */
 class LatinLanguageProvider(context: Context) : SpellingProvider, SuggestionProvider {
     companion object {
         // Default user ID used for all subtypes, unless otherwise specified.
         // See `ime/core/Subtype.kt` Line 210 and 211 for the default usage
         const val ProviderId = "org.florisboard.nlp.providers.latin"
+
+        /**
+         * The maximum length of a word which is considered for a suggestion. Longer words are ignored, as they are
+         * most likely not a word but a sentence or an url.
+         */
+        private const val MaxSuggestionWordLength = 32
     }
 
     private val appContext by context.appContext()
-
-    private val wordData = guardedByLock { mutableMapOf<String, Int>() }
-    private val wordDataSerializer = MapSerializer(String.serializer(), Int.serializer())
 
     override val providerId = ProviderId
 
@@ -56,24 +63,10 @@ class LatinLanguageProvider(context: Context) : SpellingProvider, SuggestionProv
         // Is kept in sync with the active keyboard subtype of the user, however a new preload does not necessary mean
         // the previous language is not needed anymore (e.g. if the user constantly switches between two subtypes)
 
-        // To read a file from the APK assets the following methods can be used:
-        // appContext.assets.open()
-        // appContext.assets.reader()
-        // appContext.assets.bufferedReader()
-        // appContext.assets.readText()
-        // To copy an APK file/dir to the file system cache (appContext.cacheDir), the following methods are available:
-        // appContext.assets.copy()
-        // appContext.assets.copyRecursively()
-
-        // The subtype we get here contains a lot of data, however we are only interested in subtype.primaryLocale and
-        // subtype.secondaryLocales.
-
-        wordData.withLock { wordData ->
-            if (wordData.isEmpty()) {
-                // Here we use readText() because the test dictionary is a json dictionary
-                val rawData = appContext.assets.readText("ime/dict/data.json")
-                val jsonData = Json.decodeFromString(wordDataSerializer, rawData)
-                wordData.putAll(jsonData)
+        for (locale in subtype.locales()) {
+            val dictionary = LatinDictionaries.get(appContext, locale.language)
+            if (dictionary.size > 0) {
+                flogInfo { "Preloaded ${dictionary.size} words for language '${locale.language}'" }
             }
         }
     }
@@ -87,15 +80,18 @@ class LatinLanguageProvider(context: Context) : SpellingProvider, SuggestionProv
         allowPossiblyOffensive: Boolean,
         isPrivateSession: Boolean,
     ): SpellingResult {
-        return when (word.lowercase()) {
-            // Use typo for typing errors
-            "typo" -> SpellingResult.typo(arrayOf("typo1", "typo2", "typo3"))
-            // Use grammar error if the algorithm can detect this. On Android 11 and lower grammar errors are visually
-            // marked as typos due to a lack of support
-            "gerror" -> SpellingResult.grammarError(arrayOf("grammar1", "grammar2", "grammar3"))
-            // Use valid word for valid input
-            else -> SpellingResult.validWord()
+        val trimmedWord = word.trim()
+        if (trimmedWord.isEmpty()) {
+            return SpellingResult.unspecified()
         }
+        val dictionary = dictionaryFor(subtype, allowFallback = false) ?: return SpellingResult.unspecified()
+        if (dictionary.contains(trimmedWord)) {
+            return SpellingResult.validWord()
+        }
+        val corrections = dictionary.nearMisses(trimmedWord, maxSuggestionCount)
+            .map { it.word }
+            .toTypedArray()
+        return SpellingResult.typo(corrections)
     }
 
     override suspend fun suggest(
@@ -105,21 +101,55 @@ class LatinLanguageProvider(context: Context) : SpellingProvider, SuggestionProv
         allowPossiblyOffensive: Boolean,
         isPrivateSession: Boolean,
     ): List<SuggestionCandidate> {
-        return emptyList()
-        /*val word = content.composingText.ifBlank { "next" }
-        val suggestions = buildList {
-            for (n in 0 until maxCandidateCount) {
-                add(WordSuggestionCandidate(
-                    text = "$word$n",
-                    secondaryText = if (n % 2 == 1) "secondary" else null,
-                    confidence = 0.5,
-                    isEligibleForAutoCommit = false,//n == 0 && word.startsWith("auto"),
-                    // We set ourselves as the source provider so we can get notify events for our candidate
-                    sourceProvider = this@LatinLanguageProvider,
-                ))
+        val word = content.composingText.trim()
+        if (word.isEmpty() || word.length > MaxSuggestionWordLength) {
+            return emptyList()
+        }
+        val dictionary = dictionaryFor(subtype, allowFallback = false) ?: return emptyList()
+
+        val exactFrequency = dictionary.frequencyOf(word)
+        val suggestions = dictionary.suggestionsFor(word, maxCandidateCount)
+        if (exactFrequency <= 0 && suggestions.isEmpty()) {
+            // The typed word is not part of the dictionary, offer similar words instead
+            return dictionary.nearMisses(word, maxCandidateCount).map { nearMiss ->
+                WordSuggestionCandidate(
+                    text = matchCapitalization(word, nearMiss.word),
+                    confidence = confidenceOf(nearMiss.frequency, nearMiss.distance),
+                    isEligibleForAutoCommit = false,
+                    isEligibleForUserRemoval = false,
+                    sourceProvider = this,
+                )
             }
         }
-        return suggestions*/
+
+        val candidates = ArrayList<SuggestionCandidate>(suggestions.size + 1)
+        if (exactFrequency > 0) {
+            // The word which was typed is a valid word, so it should be the first suggestion
+            candidates.add(
+                WordSuggestionCandidate(
+                    text = word,
+                    confidence = confidenceOf(exactFrequency, 0),
+                    isEligibleForAutoCommit = false,
+                    isEligibleForUserRemoval = false,
+                    sourceProvider = this,
+                )
+            )
+        }
+        for (suggestion in suggestions) {
+            if (exactFrequency > 0 && suggestion.word.equals(word, ignoreCase = true)) {
+                continue
+            }
+            candidates.add(
+                WordSuggestionCandidate(
+                    text = matchCapitalization(word, suggestion.word),
+                    confidence = confidenceOf(suggestion.frequency, 0),
+                    isEligibleForAutoCommit = false,
+                    isEligibleForUserRemoval = false,
+                    sourceProvider = this,
+                )
+            )
+        }
+        return candidates.take(maxCandidateCount)
     }
 
     override suspend fun notifySuggestionAccepted(subtype: Subtype, candidate: SuggestionCandidate) {
@@ -137,15 +167,56 @@ class LatinLanguageProvider(context: Context) : SpellingProvider, SuggestionProv
     }
 
     override suspend fun getListOfWords(subtype: Subtype): List<String> {
-        return wordData.withLock { it.keys.toList() }
+        val dictionary = dictionaryFor(subtype, allowFallback = true) ?: return emptyList()
+        return dictionary.wordList()
     }
 
     override suspend fun getFrequencyForWord(subtype: Subtype, word: String): Double {
-        return wordData.withLock { it.getOrDefault(word, 0) / 255.0 }
+        val dictionary = dictionaryFor(subtype, allowFallback = true) ?: return 0.0
+        return dictionary.frequencyOf(word) / 255.0
     }
 
     override suspend fun destroy() {
         // Here we have the chance to de-allocate memory and finish our work. However this might never be called if
         // the app process is killed (which will most likely always be the case).
+    }
+
+    /**
+     * Returns the dictionary which matches the language of the given [subtype] or null if no dictionary is available.
+     *
+     * @param subtype The subtype to get the dictionary for.
+     * @param allowFallback If true, the english dictionary is used if no dictionary is available for the language of
+     *  the given subtype. This is required for the glide typing feature, which relies on a word list being present.
+     */
+    private suspend fun dictionaryFor(subtype: Subtype, allowFallback: Boolean): LatinDictionary? {
+        for (locale in subtype.locales()) {
+            val dictionary = LatinDictionaries.get(appContext, locale.language)
+            if (dictionary.size > 0) {
+                return dictionary
+            }
+        }
+        if (!allowFallback) return null
+        val fallback = LatinDictionaries.get(appContext, LatinDictionaries.FallbackLanguage)
+        return fallback.takeIf { it.size > 0 }
+    }
+
+    /**
+     * Matches the capitalization of the typed [word] with the given [suggestion], so that a word which was typed with
+     * an uppercase first letter is also suggested with an uppercase first letter.
+     */
+    private fun matchCapitalization(word: String, suggestion: String): String {
+        if (word.isEmpty() || suggestion.isEmpty()) return suggestion
+        if (!word[0].isUpperCase()) return suggestion
+        return suggestion.replaceFirstChar { it.uppercaseChar() }
+    }
+
+    /**
+     * Computes the confidence of a suggestion candidate based on the frequency of the suggested word and the edit
+     * distance to the typed word.
+     */
+    private fun confidenceOf(frequency: Int, distance: Int): Double {
+        val frequencyConfidence = (frequency / 255.0).coerceIn(0.0, 1.0)
+        val distancePenalty = distance * 0.2
+        return (frequencyConfidence - distancePenalty).coerceIn(0.05, 1.0)
     }
 }

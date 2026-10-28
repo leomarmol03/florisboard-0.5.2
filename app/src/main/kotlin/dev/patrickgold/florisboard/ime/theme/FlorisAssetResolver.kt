@@ -17,15 +17,34 @@
 package dev.patrickgold.florisboard.ime.theme
 
 import android.content.Context
+import dev.patrickgold.florisboard.app.font.CustomFontStorage
 import dev.patrickgold.florisboard.lib.devtools.flogError
 import org.florisboard.lib.kotlin.io.subFile
 import org.florisboard.lib.snygg.value.SnyggAssetResolver
+import java.io.File
 import java.net.URI
 
-class FlorisAssetResolver(val context: Context, val themeInfo: ThemeManager.ThemeInfo) : SnyggAssetResolver {
+class FlorisAssetResolver(
+    val context: Context,
+    val themeInfo: ThemeManager.ThemeInfo,
+    val customFontName: String = CustomFontStorage.NO_FONT,
+) : SnyggAssetResolver {
     override fun resolveAbsolutePath(uri: String) = runCatching {
         val uri = URI.create(uri)
-        require(uri.scheme == "flex")
+        when (uri.scheme) {
+            "flex" -> resolveThemeAsset(uri)
+            "font" -> resolveCustomFont(uri)
+            "res" -> resolveResourceAsset(uri)
+            else -> error("Unsupported URI scheme '${uri.scheme}'")
+        }
+    }.onFailure { exception ->
+        flogError { "FlorisAssetResolver failed to resolve URI '$uri'\n  error: ${exception.message}\n  with:  $themeInfo" }
+    }
+
+    /**
+     * Resolves a URI which points to a file within the currently loaded theme directory.
+     */
+    private fun resolveThemeAsset(uri: URI): String {
         require(uri.authority.isNullOrEmpty())
         val baseDir = checkNotNull(themeInfo.loadedDir) { "Loaded directory was null" }
         val basePath = baseDir.canonicalPath
@@ -40,8 +59,50 @@ class FlorisAssetResolver(val context: Context, val themeInfo: ThemeManager.Them
         check(canonicalFile.isFile()) {
             "Calculated path '$canonicalPath' is not a file"
         }
-        canonicalPath
-    }.onFailure { exception ->
-        flogError { "FlorisAssetResolver failed to resolve URI '$uri'\n  error: ${exception.message}\n  with:  $themeInfo" }
+        return canonicalPath
+    }
+
+    /**
+     * Resolves a URI which points to the custom font which the user has selected.
+     *
+     * If no font has been selected by the user, the resolution fails and the default system font is used instead.
+     */
+    private fun resolveCustomFont(uri: URI): String {
+        require(uri.authority.isNullOrEmpty())
+        val fontFile = checkNotNull(CustomFontStorage.fontFile(context, customFontName)) {
+            "No custom font has been selected by the user"
+        }
+        return fontFile.absolutePath
+    }
+
+    /**
+     * Resolves a URI which points to a resource of the app, e.g. `res:/raw/example`.
+     *
+     * As the snygg theme compiler expects an absolute path of a file, the resource is copied into the cache
+     * directory of the app. The copy is only created once and is reused afterwards.
+     */
+    private fun resolveResourceAsset(uri: URI): String {
+        require(uri.authority.isNullOrEmpty())
+        val resourcePath = uri.path.removePrefix("/")
+        check(resourcePath.isNotBlank()) { "The resource path must not be empty" }
+        val (resourceType, resourceName) = resourcePath.split("/", limit = 2).let { parts ->
+            if (parts.size == 2) parts[0] to parts[1] else "raw" to parts[0]
+        }
+        val resourceId = context.resources.getIdentifier(resourceName, resourceType, context.packageName)
+        check(resourceId != 0) { "Unable to find the resource '$resourcePath'" }
+
+        val cacheDir = File(context.cacheDir, "snygg-assets").apply { mkdirs() }
+        val cacheFile = File(cacheDir, resourcePath.replace('/', '_'))
+        if (!cacheFile.exists()) {
+            val temporaryFile = File(cacheDir, "${cacheFile.name}.tmp")
+            context.resources.openRawResource(resourceId).use { input ->
+                temporaryFile.outputStream().use { output -> input.copyTo(output) }
+            }
+            if (!temporaryFile.renameTo(cacheFile)) {
+                temporaryFile.copyTo(cacheFile, overwrite = true)
+                temporaryFile.delete()
+            }
+        }
+        return cacheFile.absolutePath
     }
 }

@@ -2,7 +2,7 @@ name: Build (auto)
 
 # Automatically compiles the keyboard on every branch push (and on demand), so
 # that any change is verified against a real Android build without having to
-# merge into `main` first. The resulting debug APK is uploaded as an artifact.
+# merge into `main` first. The resulting release APK is uploaded as an artifact.
 
 on:
   push:
@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   build:
-    name: Assemble debug APK
+    name: Assemble release APK
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
@@ -57,10 +57,10 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          ./gradlew --stacktrace --console=plain assembleDebug 2>&1 | tee gradle-build.log
+          ./gradlew --stacktrace --console=plain assembleRelease 2>&1 | tee gradle-build.log
 
-      # On failure, publish the compiler output as a check run so the errors can
-      # be inspected without access to the raw job logs.
+      # On failure, publish the compiler output as a check run so the errors can be
+      # inspected without access to the raw job logs.
       - name: Publish build errors
         if: failure()
         env:
@@ -70,7 +70,12 @@ jobs:
           {
             echo "### Gradle build errors"
             echo '```'
-            grep -aE "^e: |error:|FAILURE:|What went wrong|> Task .* FAILED|Caused by|\.kt:[0-9]+:[0-9]+" gradle-build.log | head -n 400 || true
+            grep -aE "^e: |error:|FAILURE:|What went wrong|> Task .* FAILED|Caused by|Could not|\.kt:[0-9]+:[0-9]+" gradle-build.log | head -n 200 || true
+            echo '```'
+            echo ""
+            echo "### Last 150 lines of the build log"
+            echo '```'
+            tail -n 150 gradle-build.log
             echo '```'
           } > gradle-errors.md
           gh api "repos/${GITHUB_REPOSITORY}/check-runs" \
@@ -99,13 +104,13 @@ jobs:
       # step only makes sure the test sources keep compiling.
       - name: Compile unit tests
         continue-on-error: true
-        run: ./gradlew --console=plain compileDebugUnitTestKotlin
+        run: ./gradlew --console=plain compileReleaseUnitTestKotlin
 
-      - name: Upload debug APK
+      - name: Upload release APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: app-release-apk
+          path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14

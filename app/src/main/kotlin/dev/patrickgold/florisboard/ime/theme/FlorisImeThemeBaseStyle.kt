@@ -26,8 +26,24 @@ import dev.patrickgold.florisboard.ime.input.InputShiftState
 import dev.patrickgold.florisboard.ime.text.key.KeyCode
 import org.florisboard.lib.snygg.SnyggSelector
 import org.florisboard.lib.snygg.SnyggStylesheet
+import org.florisboard.lib.snygg.value.SnyggCustomFontFamilyValue
 
 val FlorisImeThemeBaseStyle = SnyggStylesheet.v2 {
+    /**
+     * The font which the user has added from the storage of the device. If no font has been selected, the default
+     * system font is used instead.
+     */
+    font(FlorisImeFont.Custom) {
+        add {
+            src = uri(FlorisImeFont.CustomUri)
+            fontWeight = fontWeight(FontWeight.Normal)
+        }
+        add {
+            src = uri(FlorisImeFont.CustomUri)
+            fontWeight = fontWeight(FontWeight.Bold)
+        }
+    }
+
     defines {
         "--primary" to rgbaColor(76, 175, 80)
         "--primary-variant" to rgbaColor(56, 142, 60)
@@ -47,6 +63,9 @@ val FlorisImeThemeBaseStyle = SnyggStylesheet.v2 {
         "--shape-variant" to roundedCornerShape(12.dp)
     }
 
+    FlorisImeUi.Root.elementName {
+        fontFamily = SnyggCustomFontFamilyValue(FlorisImeFont.Custom)
+    }
     FlorisImeUi.Window.elementName {
         background = `var`("--background")
         foreground = `var`("--on-background")
@@ -264,6 +283,34 @@ val FlorisImeThemeBaseStyle = SnyggStylesheet.v2 {
     FlorisImeUi.ClipboardSubheader.elementName {
         fontSize = fontSize(14.sp)
         margin = padding(6.dp)
+    }
+    FlorisImeUi.ClipboardTabRow.elementName {
+        foreground = `var`("--on-background")
+    }
+    FlorisImeUi.ClipboardTab.elementName {
+        foreground = `var`("--on-background-disabled")
+        fontSize = fontSize(14.sp)
+        shape = `var`("--shape")
+    }
+    FlorisImeUi.ClipboardTab.elementName("state" to listOf("active")) {
+        foreground = `var`("--on-background")
+        fontWeight = fontWeight(FontWeight.Bold)
+    }
+    FlorisImeUi.ClipboardTabText.elementName {
+        fontSize = fontSize(14.sp)
+    }
+    FlorisImeUi.ClipboardItemDeleteBackground.elementName {
+        background = rgbaColor(0, 0, 0, 0f)
+        foreground = rgbaColor(220, 38, 38)
+        shape = `var`("--shape-variant")
+    }
+    FlorisImeUi.ClipboardItemDeleteIcon.elementName {
+        foreground = rgbaColor(220, 38, 38)
+        fontSize = fontSize(20.sp)
+    }
+    FlorisImeUi.ClipboardItemCheckbox.elementName {
+        foreground = `var`("--on-surface")
+        fontSize = fontSize(20.sp)
     }
     FlorisImeUi.ClipboardContent.elementName {
         padding = padding(10.dp)

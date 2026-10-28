@@ -129,6 +129,17 @@ data class EmojiMappingForView(
     val simple: List<EmojiSet>,
 )
 
+/**
+ * Holds the emoji of the palette, along with the information which emojis are already supported by the system font.
+ *
+ * Emojis which are supported by the system font can be rendered with a plain text, which is way faster than
+ * rendering them with an [androidx.emoji2.widget.EmojiTextView].
+ */
+data class EmojiPaletteData(
+    val byCategory: Map<EmojiCategory, List<EmojiSet>>,
+    val systemFontSupported: Set<String>,
+)
+
 @Composable
 fun EmojiPaletteView(
     fullEmojiMappings: EmojiData,
@@ -148,16 +159,24 @@ fun EmojiPaletteView(
     val metadataVersion = activeEditorInfo.emojiCompatMetadataVersion
     val replaceAll = activeEditorInfo.emojiCompatReplaceAll
     val emojiCompatInstance by FlorisEmojiCompat.getAsFlow(replaceAll).collectAsState()
-    val emojiMappings = remember(emojiCompatInstance, fullEmojiMappings, metadataVersion, systemFontPaint) {
-        fullEmojiMappings.byCategory.mapValues { (_, emojiSetList) ->
+    val emojiPaletteData = remember(emojiCompatInstance, fullEmojiMappings, metadataVersion, systemFontPaint) {
+        val systemFontSupported = HashSet<String>()
+        val byCategory = fullEmojiMappings.byCategory.mapValues { (_, emojiSetList) ->
             emojiSetList.mapNotNull { emojiSet ->
                 emojiSet.emojis.filter { emoji ->
-                    emojiCompatInstance?.getEmojiMatch(emoji.value, metadataVersion) == EmojiCompat.EMOJI_SUPPORTED ||
-                        systemFontPaint.hasGlyph(emoji.value)
+                    val isSupportedByEmojiCompat =
+                        emojiCompatInstance?.getEmojiMatch(emoji.value, metadataVersion) == EmojiCompat.EMOJI_SUPPORTED
+                    val isSupportedBySystemFont = systemFontPaint.hasGlyph(emoji.value)
+                    if (isSupportedBySystemFont) {
+                        systemFontSupported.add(emoji.value)
+                    }
+                    isSupportedByEmojiCompat || isSupportedBySystemFont
                 }.let { if (it.isEmpty()) null else EmojiSet(it) }
             }
         }
+        EmojiPaletteData(byCategory, systemFontSupported)
     }
+    val emojiMappings = emojiPaletteData.byCategory
     val androidKeyguardManager = remember { context.systemService(AndroidKeyguardManager::class) }
 
     val deviceLocked = androidKeyguardManager.let { it.isDeviceLocked || it.isKeyguardLocked }
@@ -193,6 +212,7 @@ fun EmojiPaletteView(
             emojiSet = emojiSet,
             emojiCompatInstance = emojiCompatInstance,
             preferredSkinTone = preferredSkinTone,
+            systemFontSupported = emojiPaletteData.systemFontSupported,
             isPinned = isPinned,
             isRecent = isRecent,
             onEmojiInput = { emoji ->
@@ -290,6 +310,15 @@ fun EmojiPaletteView(
             pagerState.animateScrollToPage(0)
         }
 
+        // Update the active category on scroll. This is done here and not within the page content, so that only a
+        // single collector is required, no matter how many pages are currently composed.
+        LaunchedEffect(pagerState) {
+            snapshotFlow { pagerState.currentPage }.collect { page ->
+                activeCategory = pageNumberToCategory(page)
+                recentlyUsedVersion++
+            }
+        }
+
         EmojiCategoriesTabRow(
             activeCategory = activeCategory,
             onCategoryChange = { category ->
@@ -297,17 +326,13 @@ fun EmojiPaletteView(
                 scope.launch { pagerState.animateScrollToPage(categoryToPageNumber(activeCategory)) }
             },
         )
-        HorizontalPager(pagerState, beyondViewportPageCount = 1) { page ->
+        HorizontalPager(pagerState, beyondViewportPageCount = 0) { page ->
             // Every page needs its own lazyGridState in order to scroll correctly
             val lazyGridState = rememberLazyGridState()
 
-            // Update the lazyGridState and active category on scroll
-            LaunchedEffect(pagerState) {
-                snapshotFlow { pagerState.currentPage }.collect { page ->
-                    lazyGridState.scrollToItem(0)
-                    activeCategory = pageNumberToCategory(page)
-                    recentlyUsedVersion++
-                }
+            // Reset the scroll position of the page if the active category changed
+            LaunchedEffect(activeCategory) {
+                lazyGridState.scrollToItem(0)
             }
 
             val category = pageNumberToCategory(page)
@@ -402,14 +427,17 @@ private fun EmojiKey(
     emojiSet: EmojiSet,
     emojiCompatInstance: EmojiCompat?,
     preferredSkinTone: EmojiSkinTone,
+    systemFontSupported: Set<String>,
     isPinned: Boolean,
     isRecent: Boolean,
     onEmojiInput: (Emoji) -> Unit,
     onHistoryAction: () -> Unit,
 ) {
     val inputFeedbackController = LocalInputFeedbackController.current
-    val base = emojiSet.base(withSkinTone = preferredSkinTone)
-    val variations = emojiSet.variations(withoutSkinTone = preferredSkinTone)
+    val base = remember(emojiSet, preferredSkinTone) { emojiSet.base(withSkinTone = preferredSkinTone) }
+    val variations = remember(emojiSet, preferredSkinTone) {
+        emojiSet.variations(withoutSkinTone = preferredSkinTone)
+    }
     var showVariantsBox by remember { mutableStateOf(false) }
 
     SnyggBox(FlorisImeUi.MediaEmojiKey.elementName,
@@ -436,6 +464,7 @@ private fun EmojiKey(
             modifier = Modifier.align(Alignment.Center),
             text = base.value,
             emojiCompatInstance = emojiCompatInstance,
+            useSystemFont = systemFontSupported.contains(base.value),
         )
         if (variations.isNotEmpty() || isPinned || isRecent) {
             val style = rememberSnyggThemeQuery(FlorisImeUi.MediaEmojiKeyPopupExtendedIndicator.elementName)
@@ -470,6 +499,7 @@ private fun EmojiKey(
                 variations = variations,
                 visible = showVariantsBox,
                 emojiCompatInstance = emojiCompatInstance,
+                systemFontSupported = systemFontSupported,
                 onEmojiTap = { emoji ->
                     onEmojiInput(emoji)
                     showVariantsBox = false
@@ -488,6 +518,7 @@ private fun EmojiVariationsPopup(
     variations: List<Emoji>,
     visible: Boolean,
     emojiCompatInstance: EmojiCompat?,
+    systemFontSupported: Set<String>,
     onEmojiTap: (Emoji) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -521,6 +552,7 @@ private fun EmojiVariationsPopup(
                             modifier = Modifier.align(Alignment.Center),
                             text = emoji.value,
                             emojiCompatInstance = emojiCompatInstance,
+                            useSystemFont = systemFontSupported.contains(emoji.value),
                         )
                     }
                 }
@@ -638,8 +670,21 @@ fun EmojiText(
     modifier: Modifier = Modifier,
     color: Color = Color.Black,
     fontSize: TextUnit = EmojiDefaultFontSize,
+    useSystemFont: Boolean = false,
 ) {
-    if (emojiCompatInstance != null) {
+    if (useSystemFont) {
+        // The system font is able to render this emoji on its own, so there is no need to fall back to the much
+        // more expensive emoji compat widget. This is a major performance improvement, as the palette consists of
+        // a lot of emojis which are all rendered at the same time.
+        Text(
+            modifier = modifier,
+            text = text,
+            color = color,
+            fontSize = fontSize,
+            softWrap = false,
+            maxLines = 1,
+        )
+    } else if (emojiCompatInstance != null) {
         AndroidView(
             modifier = modifier,
             factory = { context ->

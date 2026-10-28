@@ -70,7 +70,10 @@ fun FlorisAppTheme(
     theme: AppTheme,
     content: @Composable () -> Unit,
 ) {
+    val prefs by FlorisPreferenceStore
+    val customFontName by prefs.other.customFont.observeAsState()
     val colors = getColorScheme(theme = theme)
+    val typography = rememberFlorisTypography(customFontName)
 
     val darkTheme =
         theme == AppTheme.DARK
@@ -88,7 +91,7 @@ fun FlorisAppTheme(
 
     MaterialTheme(
         colorScheme = colors,
-        typography = Typography,
+        typography = typography,
         content = content,
     )
 }

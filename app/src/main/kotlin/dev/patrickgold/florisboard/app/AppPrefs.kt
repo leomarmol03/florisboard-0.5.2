@@ -26,6 +26,7 @@ import dev.patrickgold.florisboard.app.settings.theme.SnyggLevel
 import dev.patrickgold.florisboard.app.setup.NotificationPermissionState
 import dev.patrickgold.florisboard.ime.clipboard.CLIPBOARD_HISTORY_NUM_GRID_COLUMNS_AUTO
 import dev.patrickgold.florisboard.ime.clipboard.ClipboardSyncBehavior
+import dev.patrickgold.florisboard.ime.clipboard.ClipboardTab
 import dev.patrickgold.florisboard.ime.core.DisplayLanguageNamesIn
 import dev.patrickgold.florisboard.ime.core.Subtype
 import dev.patrickgold.florisboard.ime.input.CapitalizationBehavior
@@ -101,6 +102,10 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val suggestionTimeout = int(
             key = "clipboard__suggestion_timeout",
             default = 60,
+        )
+        val activeTab = enum(
+            key = "clipboard__active_tab",
+            default = ClipboardTab.RECENT,
         )
         val historyEnabled = boolean(
             key = "clipboard__history_enabled",
@@ -653,6 +658,14 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "other__show_app_icon",
             default = true,
         )
+        /**
+         * The file name of the custom font which the user has selected. An empty string means that the default
+         * system font is used.
+         */
+        val customFont = string(
+            key = "other__custom_font",
+            default = "",
+        )
     }
 
     val physicalKeyboard = PhysicalKeyboard()
@@ -729,7 +742,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         )
         val enabled = boolean(
             key = "suggestion__enabled",
-            default = false,
+            default = true,
         )
         val displayMode = enum(
             key = "suggestion__display_mode",

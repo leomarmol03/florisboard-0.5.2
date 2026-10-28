@@ -54,6 +54,7 @@ import dev.patrickgold.florisboard.app.settings.about.AboutScreen
 import dev.patrickgold.florisboard.app.settings.about.ProjectLicenseScreen
 import dev.patrickgold.florisboard.app.settings.about.ThirdPartyLicensesScreen
 import dev.patrickgold.florisboard.app.settings.advanced.BackupScreen
+import dev.patrickgold.florisboard.app.settings.advanced.CustomFontScreen
 import dev.patrickgold.florisboard.app.settings.advanced.OtherScreen
 import dev.patrickgold.florisboard.app.settings.advanced.PhysicalKeyboardScreen
 import dev.patrickgold.florisboard.app.settings.advanced.RestoreScreen
@@ -179,6 +180,10 @@ object Routes {
         @Serializable
         @Deeplink("settings/other/physical-keyboard")
         object PhysicalKeyboard
+
+        @Serializable
+        @Deeplink("settings/other/custom-font")
+        object CustomFont
 
         @Serializable
         @Deeplink("settings/other/backup")
@@ -316,6 +321,7 @@ object Routes {
 
             composableWithDeepLink(Settings.Other::class) { OtherScreen() }
             composableWithDeepLink(Settings.PhysicalKeyboard::class) { PhysicalKeyboardScreen() }
+            composableWithDeepLink(Settings.CustomFont::class) { CustomFontScreen() }
             composableWithDeepLink(Settings.Backup::class) { BackupScreen() }
             composableWithDeepLink(Settings.Restore::class) { RestoreScreen() }
 
