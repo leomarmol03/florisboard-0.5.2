@@ -76,6 +76,27 @@ fun QuickAction.keyData(): KeyData {
 
 @Composable
 fun QuickAction.computeDisplayName(evaluator: ComputingEvaluator): String {
+    return computeActionName(
+        dragMarkerName = if (evaluator.state.debugShowDragAndDropHelpers) {
+            R.string.quick_action__drag_marker
+        } else {
+            R.string.general__empty_string
+        },
+    )
+}
+
+/**
+ * Computes the name of this action, which is shown in the settings of the app.
+ *
+ * In contrast to [computeDisplayName], this function does not need a computing evaluator and can therefore be used
+ * in the settings of the app, where no keyboard is running.
+ *
+ * @param dragMarkerName The name of the drag marker action.
+ *
+ * @return The name of this action.
+ */
+@Composable
+fun QuickAction.computeActionName(dragMarkerName: Int = R.string.quick_action__drag_marker): String {
     return when (this) {
         is QuickAction.InsertKey -> stringRes(when (data.code) {
             KeyCode.ARROW_UP -> R.string.quick_action__arrow_up
@@ -103,11 +124,7 @@ fun QuickAction.computeDisplayName(evaluator: ComputingEvaluator): String {
             KeyCode.IME_HIDE_UI -> R.string.quick_action__ime_hide_ui
             // TODO: In the future this will be merged into the resize keyboard panel, for now it is a separate action
             KeyCode.TOGGLE_COMPACT_LAYOUT -> R.string.quick_action__one_handed_mode
-            KeyCode.DRAG_MARKER -> if (evaluator.state.debugShowDragAndDropHelpers) {
-                R.string.quick_action__drag_marker
-            } else {
-                R.string.general__empty_string
-            }
+            KeyCode.DRAG_MARKER -> dragMarkerName
             KeyCode.NOOP -> R.string.quick_action__noop
             else -> R.string.general__invalid_fatal
         })

@@ -61,6 +61,15 @@
     <string name="pref__translate__yandex_api_key__label">Clave de api de yandex</string>
     <string name="pref__translate__yandex_api_key__summary">No se ha definido ninguna clave de api</string>
     <string name="pref__translate__target_language__label">Idioma de destino</string>
+    <string name="pref__translate__source_language__label">Idioma de origen</string>
+    <string name="translate__auto_language">Automático</string>
+    <string name="settings__smartbar__quick_actions__title">Acciones rápidas</string>
+    <string name="pref__smartbar__quick_actions__label">Acciones rápidas</string>
+    <string name="pref__smartbar__quick_actions__summary">Añade el traductor, el editor de texto y otras acciones a la barra inteligente</string>
+    <string name="pref__smartbar__quick_actions__group_sticky__label">Acción fija</string>
+    <string name="pref__smartbar__quick_actions__group_dynamic__label">Acciones de la barra inteligente</string>
+    <string name="pref__smartbar__quick_actions__selected__summary">Seleccionada</string>
+    <string name="pref__smartbar__quick_actions__set_sticky__summary">Establecer como acción fija</string>
     <string name="enum__translation_provider__yandex">Yandex</string>
     <string name="enum__translation_provider__google">Google</string>
     <string name="text_editor__title">Editor de texto</string>

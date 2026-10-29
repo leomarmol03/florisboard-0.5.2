@@ -17,6 +17,7 @@
 package dev.patrickgold.florisboard.ime.translate
 
 import android.content.Intent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -25,9 +26,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +54,7 @@ import kotlinx.coroutines.launch
 import org.florisboard.lib.compose.florisVerticalScroll
 import org.florisboard.lib.compose.stringRes
 import org.florisboard.lib.snygg.ui.SnyggBox
+import org.florisboard.lib.snygg.ui.SnyggButton
 import org.florisboard.lib.snygg.ui.SnyggColumn
 import org.florisboard.lib.snygg.ui.SnyggIcon
 import org.florisboard.lib.snygg.ui.SnyggIconButton
@@ -77,7 +82,7 @@ fun TranslatePanel(
     val errorMessage = TranslationManager.errorMessage
     val isTranslating = TranslationManager.isTranslating
     val targetLanguage = TranslationManager.targetLanguage
-    var isLanguageMenuShown by remember { mutableStateOf(false) }
+    val sourceLanguage = TranslationManager.sourceLanguage
 
     fun close() {
         TranslationManager.close()
@@ -108,37 +113,37 @@ fun TranslatePanel(
                     .padding(horizontal = 8.dp),
                 text = stringRes(R.string.translate__title),
             )
-            SnyggBox(
-                elementName = "translate-panel-language-button",
-                modifier = Modifier.padding(end = 8.dp),
-            ) {
-                SnyggIconButton(
-                    elementName = "translate-panel-language-icon",
-                    onClick = { isLanguageMenuShown = true },
-                ) {
-                    SnyggIcon(imageVector = Icons.Default.Language)
-                }
-                DropdownMenu(
-                    expanded = isLanguageMenuShown,
-                    onDismissRequest = { isLanguageMenuShown = false },
-                ) {
-                    for (language in TranslationManager.SupportedLanguages) {
-                        DropdownMenuItem(
-                            text = {
-                                androidx.compose.material3.Text(
-                                    text = FlorisLocale.from(language).base.displayLanguage,
-                                )
-                            },
-                            onClick = {
-                                isLanguageMenuShown = false
-                                scope.launch {
-                                    TranslationManager.setTargetLanguage(language)
-                                }
-                            },
-                        )
+        }
+        SnyggRow(
+            elementName = "translate-panel-languages",
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            LanguageButton(
+                language = sourceLanguage,
+                includeAuto = true,
+                onLanguageSelected = { language ->
+                    scope.launch { TranslationManager.setSourceLanguage(language) }
+                },
+            )
+            SnyggIconButton(
+                elementName = "translate-panel-swap-button",
+                onClick = {
+                    scope.launch {
+                        TranslationManager.swapLanguages()
+                        TranslationManager.translate()
                     }
-                }
+                },
+            ) {
+                SnyggIcon(imageVector = Icons.Default.SwapHoriz)
             }
+            LanguageButton(
+                language = targetLanguage,
+                includeAuto = false,
+                onLanguageSelected = { language ->
+                    scope.launch { TranslationManager.setTargetLanguage(language) }
+                },
+            )
         }
         SnyggColumn(
             elementName = "translate-panel-content",
@@ -227,6 +232,61 @@ fun TranslatePanel(
                 enabled = translatedText.isNotEmpty() || sourceText.isNotEmpty(),
             ) {
                 SnyggIcon(imageVector = Icons.Default.Share)
+            }
+        }
+    }
+}
+
+/**
+ * A button which shows the language of the translation and which opens a menu with all the available languages.
+ *
+ * @param language The language code of the current language, e.g. "es".
+ * @param includeAuto Whether the automatic detection of the language should be an option of the menu.
+ * @param onLanguageSelected The callback which is invoked with the language code of the selected language.
+ */
+@Composable
+private fun LanguageButton(
+    language: String,
+    includeAuto: Boolean,
+    onLanguageSelected: (String) -> Unit,
+) {
+    var isMenuShown by remember { mutableStateOf(false) }
+    Box {
+        SnyggButton(
+            elementName = "translate-panel-language-button",
+            onClick = { isMenuShown = true },
+            modifier = Modifier.padding(horizontal = 4.dp),
+        ) {
+            SnyggText(
+                text = if (language == TranslationManager.AutoLanguage) {
+                    stringRes(R.string.translate__auto_language)
+                } else {
+                    FlorisLocale.from(language).base.displayLanguage
+                },
+            )
+            SnyggIcon(imageVector = Icons.Default.ArrowDropDown)
+        }
+        DropdownMenu(
+            expanded = isMenuShown,
+            onDismissRequest = { isMenuShown = false },
+        ) {
+            if (includeAuto) {
+                DropdownMenuItem(
+                    text = { Text(text = stringRes(R.string.translate__auto_language)) },
+                    onClick = {
+                        isMenuShown = false
+                        onLanguageSelected(TranslationManager.AutoLanguage)
+                    },
+                )
+            }
+            for (option in TranslationManager.SupportedLanguages) {
+                DropdownMenuItem(
+                    text = { Text(text = FlorisLocale.from(option).base.displayLanguage) },
+                    onClick = {
+                        isMenuShown = false
+                        onLanguageSelected(option)
+                    },
+                )
             }
         }
     }

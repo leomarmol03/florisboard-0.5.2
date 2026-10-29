@@ -208,26 +208,24 @@ fun RestoreScreen() = FlorisScreen {
                 srcDir.copyRecursively(dstDir, overwrite = true)
             }
         }
-        if (restoreFilesSelector.customFonts) {
-            // The font which is selected in the settings is applied forcibly. If the file of the font is not
-            // present, for example because the restore erased the fonts of the app, then the copy which was made
-            // before the restore is used again.
-            if (selectedFont.isNotBlank()) {
-                if (CustomFontStorage.fontFile(context, selectedFont) == null && fontBackupFile != null) {
-                    runCatching {
-                        fontBackupFile.copyTo(
-                            File(CustomFontStorage.fontDir(context), selectedFont),
-                            overwrite = true,
-                        )
-                    }
+        // The font which is selected in the settings is applied forcibly, no matter which parts of the backup have
+        // been restored. Otherwise the restored preferences, which may hold no font at all or a font of another
+        // device, would overwrite the selection of the user and the font would be lost.
+        if (selectedFont.isNotBlank()) {
+            if (CustomFontStorage.fontFile(context, selectedFont) == null && fontBackupFile != null) {
+                runCatching {
+                    fontBackupFile.copyTo(
+                        File(CustomFontStorage.fontDir(context), selectedFont),
+                        overwrite = true,
+                    )
                 }
-                prefs.other.customFont.set(selectedFont)
-            } else {
-                prefs.other.customFont.set(CustomFontStorage.NO_FONT)
             }
-            // The theme of the keyboard has to be recompiled, as the font of the user is applied.
-            CustomFontStorage.notifyChanged()
+            prefs.other.customFont.set(selectedFont)
+        } else {
+            prefs.other.customFont.set(CustomFontStorage.NO_FONT)
         }
+        // The theme of the keyboard has to be recompiled, as the font of the user is applied.
+        CustomFontStorage.notifyChanged()
         fontBackupFile?.delete()
         val clipboardManager = context.clipboardManager().value
         if (shouldReset) {

@@ -68,6 +68,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.patrickgold.florisboard.lib.compose.FlorisDropdown
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.enumDisplayEntriesOf
 import dev.patrickgold.florisboard.ime.input.InputKeyEventReceiver
@@ -88,7 +89,6 @@ import dev.patrickgold.florisboard.lib.NATIVE_NULLPTR
 import dev.patrickgold.florisboard.lib.compose.FlorisHyperlinkText
 import dev.patrickgold.florisboard.lib.util.InputMethodUtils
 import dev.patrickgold.jetpref.material.ui.JetPrefAlertDialog
-import dev.patrickgold.jetpref.material.ui.JetPrefDropdown
 import dev.patrickgold.jetpref.material.ui.JetPrefTextField
 import dev.patrickgold.jetpref.material.ui.JetPrefTextFieldDefaults
 import org.florisboard.lib.android.showShortToast
@@ -209,7 +209,7 @@ internal fun EditRuleDialog(
             }
 
             DialogProperty(text = stringRes(R.string.settings__theme_editor__rule_name)) {
-                JetPrefDropdown(
+                FlorisDropdown(
                     options = possibleRuleLabels,
                     selectedOptionIndex = elementsSelectedIndex,
                     onSelectOption = { elementsSelectedIndex = it },
