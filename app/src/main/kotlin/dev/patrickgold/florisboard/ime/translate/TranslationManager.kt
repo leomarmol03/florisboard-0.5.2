@@ -43,6 +43,13 @@ object TranslationManager {
     /** The endpoint of the translate api of google. */
     private const val GOOGLE_ENDPOINT = "https://translate.googleapis.com/translate_a/single"
 
+    /** The special language code which means that the language of the text is detected automatically. */
+    const val AutoLanguage = "auto"
+
+    /** The language which is used, if the user exchanges the languages and the source language was detected
+     * automatically, because the automatic detection cannot be used as the target language. */
+    const val DefaultLanguage = "en"
+
     /** The languages which the user can choose as the target language of a translation. */
     val SupportedLanguages = listOf(
         "en", "es", "fr", "de", "it", "pt", "ru", "uk", "pl", "nl", "tr", "ar",
@@ -68,6 +75,9 @@ object TranslationManager {
     /** The language into which the text is translated. */
     var targetLanguage by mutableStateOf("en")
 
+    /** The language from which the text is translated or [AutoLanguage] if it is detected automatically. */
+    var sourceLanguage by mutableStateOf(AutoLanguage)
+
     private val prefs by FlorisPreferenceStore
 
     /**
@@ -81,6 +91,7 @@ object TranslationManager {
         errorMessage = null
         isTranslating = false
         targetLanguage = prefs.translate.targetLanguage.get()
+        sourceLanguage = prefs.translate.sourceLanguage.get()
         isPanelVisible = true
     }
 
@@ -98,6 +109,34 @@ object TranslationManager {
     suspend fun setTargetLanguage(language: String) {
         targetLanguage = language
         prefs.translate.targetLanguage.set(language)
+    }
+
+    /**
+     * Sets the language from which the text is translated and stores it in the preferences.
+     *
+     * @param language The language code of the source language, e.g. "de" or [AutoLanguage].
+     */
+    suspend fun setSourceLanguage(language: String) {
+        sourceLanguage = language
+        prefs.translate.sourceLanguage.set(language)
+    }
+
+    /**
+     * Exchanges the source language and the target language of the translation.
+     */
+    suspend fun swapLanguages() {
+        val newSource = targetLanguage
+        val newTarget = if (sourceLanguage == AutoLanguage) {
+            // The language of the text was detected automatically, therefore the default language is used as the
+            // new target language, as the automatic detection cannot be used as the target language.
+            DefaultLanguage
+        } else {
+            sourceLanguage
+        }
+        sourceLanguage = newSource
+        targetLanguage = newTarget
+        prefs.translate.sourceLanguage.set(newSource)
+        prefs.translate.targetLanguage.set(newTarget)
     }
 
     /**
@@ -133,10 +172,16 @@ object TranslationManager {
                 TranslationProvider.YANDEX -> {
                     val apiKey = prefs.translate.yandexApiKey.get()
                     check(apiKey.isNotBlank()) { "No api key for the yandex translate api has been set" }
-                    "$YANDEX_ENDPOINT?key=${apiKey.encode()}&text=${text.encode()}&lang=${targetLanguage.encode()}"
+                    val lang = if (sourceLanguage == AutoLanguage) {
+                        targetLanguage.encode()
+                    } else {
+                        "${sourceLanguage.encode()}-${targetLanguage.encode()}"
+                    }
+                    "$YANDEX_ENDPOINT?key=${apiKey.encode()}&text=${text.encode()}&lang=$lang"
                 }
                 TranslationProvider.GOOGLE -> {
-                    "$GOOGLE_ENDPOINT?client=gtx&sl=auto&tl=${targetLanguage.encode()}&dt=t&q=${text.encode()}"
+                    val source = if (sourceLanguage == AutoLanguage) AutoLanguage else sourceLanguage.encode()
+                    "$GOOGLE_ENDPOINT?client=gtx&sl=$source&tl=${targetLanguage.encode()}&dt=t&q=${text.encode()}"
                 }
             }
             val connection = (URL(url).openConnection() as HttpURLConnection).apply {

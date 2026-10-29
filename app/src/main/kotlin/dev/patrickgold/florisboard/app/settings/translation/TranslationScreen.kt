@@ -60,6 +60,23 @@ fun TranslationScreen() = FlorisScreen {
                 },
             )
             ListPreference(
+                prefs.translate.sourceLanguage,
+                title = stringRes(R.string.pref__translate__source_language__label),
+                entries = listPrefEntries {
+                    entry(
+                        key = TranslationManager.AutoLanguage,
+                        label = stringRes(R.string.translate__auto_language),
+                    )
+                    for (language in TranslationManager.SupportedLanguages) {
+                        entry(
+                            key = language,
+                            label = FlorisLocale.from(language).base.displayLanguage,
+                        )
+                    }
+                },
+                enabledIf = { prefs.translate.enabled isEqualTo true },
+            )
+            ListPreference(
                 prefs.translate.targetLanguage,
                 title = stringRes(R.string.pref__translate__target_language__label),
                 entries = listPrefEntries {

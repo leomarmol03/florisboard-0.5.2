@@ -743,6 +743,7 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
      * Handles a [KeyCode.IME_UI_MODE_TRANSLATE] event, which opens the panel of the translator.
      */
     private fun handleTranslate() {
+        if (!prefs.translate.enabled.get()) return
         val content = editorInstance.activeContent
         val selectedText = runCatching { content.selectedText }.getOrNull().orEmpty()
         val composingText = runCatching { content.composingText }.getOrNull().orEmpty()

@@ -715,6 +715,14 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "translate__target_language",
             default = "en",
         )
+        /**
+         * The language code of the language from which the text is translated, e.g. "de". The special value "auto"
+         * means that the language of the text is detected automatically.
+         */
+        val sourceLanguage = string(
+            key = "translate__source_language",
+            default = "auto",
+        )
     }
 
     val smartbar = Smartbar()
